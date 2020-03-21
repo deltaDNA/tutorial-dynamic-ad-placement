@@ -15,3 +15,6 @@ Goals
 ## 1.0.0  Create Empty Project
 - Added GitHub repository for project
 - Created Empty Unity Project
+
+## 1.0.1 Create Simple Game
+- Setup Camera and Canvas
