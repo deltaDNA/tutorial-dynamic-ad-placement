@@ -24,3 +24,6 @@ Goals
 - Setup StartButton and Game State
 - Levels
 - Populate and Start Level
+- Initialise Hud
+- Snake Movement
+- Add Bodyparts

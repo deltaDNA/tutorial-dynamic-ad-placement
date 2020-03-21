@@ -19,7 +19,12 @@ public class HudManager : MonoBehaviour
         txtFoodRemaining.text = "";
         
     }
-
+    public void UpdateHud(int coins, int level, int foodRemaining)
+    {
+        txtCoins.text = coins.ToString();
+        txtLevel.text = level.ToString();
+        txtFoodRemaining.text = foodRemaining.ToString();
+    }
     // Update is called once per frame
     void Update()
     {

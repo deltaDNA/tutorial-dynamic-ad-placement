@@ -881,6 +881,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c4d8f846d017b246ba039c34f12fcdb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  hud: {fileID: 980931548}
   txtStart: {fileID: 701515491}
   txtGameOver: {fileID: 223010483}
   txtCost: {fileID: 444308535}
@@ -891,6 +892,14 @@ MonoBehaviour:
     levels: []
     gameState: 0
   food: {fileID: 2928429734638903234, guid: 4d1b16f87be1f9e438f2b91b59f418fb, type: 3}
+  snakePrefab: {fileID: 1482889146334495033, guid: 129ef7581b197134d8a869e48c1479c3,
+    type: 3}
+  playerSnake: {fileID: 0}
+  bodyPrefab: {fileID: 5545049332752098011, guid: c69b27370a94b624386cf0c35d9d6be6,
+    type: 3}
+  bodyParts: []
+  beginSize: 4
+  speed: 3
 --- !u!4 &710343634
 Transform:
   m_ObjectHideFlags: 0
