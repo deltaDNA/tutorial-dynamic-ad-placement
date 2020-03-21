@@ -18,3 +18,9 @@ Goals
 
 ## 1.0.1 Create Simple Game
 - Setup Camera and Canvas
+- Setup Playfield
+- Setup HUD Displays
+- Setup Main Menu Text
+- Setup StartButton and Game State
+- Levels
+- Populate and Start Level

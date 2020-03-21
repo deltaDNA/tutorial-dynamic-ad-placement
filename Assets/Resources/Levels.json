@@ -1,0 +1,45 @@
+{
+    "levels": [
+        {
+            "food": 6,
+            "cost": 10,
+            "reward": 20
+        },
+        {
+            "food": 8,
+            "cost": 10,
+            "reward": 20
+        },
+        {
+            "food": 16,
+            "cost": 10,
+            "reward": 20
+        },
+        {
+            "food": 10,
+            "cost": 10,
+            "reward": 20
+        },
+        {
+            "food": 12,
+            "poison": 0,
+            "cost": 10,
+            "reward": 20,
+            "timelimit": 40
+        },
+        {
+            "food": 14,
+            "poison": 0,
+            "cost": 10,
+            "reward": 20,
+            "timelimit": 40
+        },
+        {
+            "food": 16,
+            "poison": 0,
+            "cost": 10,
+            "reward": 20,
+            "timelimit": 40
+        }
+    ]
+}
