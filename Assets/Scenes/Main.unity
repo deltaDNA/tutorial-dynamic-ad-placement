@@ -885,6 +885,12 @@ MonoBehaviour:
   txtGameOver: {fileID: 223010483}
   txtCost: {fileID: 444308535}
   bttnStart: {fileID: 24411880}
+  game:
+    currentLevel: 0
+    maxLevel: 0
+    levels: []
+    gameState: 0
+  food: {fileID: 2928429734638903234, guid: 4d1b16f87be1f9e438f2b91b59f418fb, type: 3}
 --- !u!4 &710343634
 Transform:
   m_ObjectHideFlags: 0

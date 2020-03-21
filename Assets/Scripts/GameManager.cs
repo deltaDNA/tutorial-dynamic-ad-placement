@@ -18,8 +18,15 @@ public class GameManager : MonoBehaviour
     private Vector3 initialScale;
     private Vector3 finalScale;
 
+    // Game Arena Walls
+    private Transform rBorder;
+    private Transform lBorder;
+    private Transform tBorder;
+    private Transform bBorder;
+
     public Game game = new Game();
-               
+    public GameObject food;
+    private List<GameObject> foodList = new List<GameObject>();
 
     // Start is called before the first frame update
     void Start()
@@ -30,6 +37,12 @@ public class GameManager : MonoBehaviour
         sourceColor = new Color(1.0f, 1.0f, 1.0f, 0.5f);
         targetColor = new Color(1.0f, 1.0f, 1.0f, 1.0f);
 
+        // Find Arena Walls
+        rBorder = GameObject.Find("border-right").transform;
+        lBorder = GameObject.Find("border-left").transform;
+        tBorder = GameObject.Find("border-top").transform;
+        bBorder = GameObject.Find("border-bottom").transform;
+        
         // Load Levels
         game.LoadLevels();
 
@@ -63,10 +76,24 @@ public class GameManager : MonoBehaviour
 
     public void StartLevel(int LevelNo)
     {
+        SpawnFood(game.levels[game.currentLevel].food);
+
         game.gameState = GameState.PLAYING;
 
 
     }
 
+
+    public void SpawnFood(int num)
+    {
+        for (int i=0; i < num; i++)
+        {
+            float x = (float)Random.Range(lBorder.position.x + 1, rBorder.position.x - 1);
+            float y = (float)Random.Range(bBorder.position.y + 1, tBorder.position.y - 1);
+            GameObject f = Instantiate(food, new Vector3(x, y, -1), Quaternion.identity);
+            foodList.Add(f);
+
+        }
+    }
 
 }
