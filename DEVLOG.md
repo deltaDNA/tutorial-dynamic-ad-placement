@@ -31,3 +31,11 @@ Goals
 - Eat Food
 - Level Progression
 - Game Over and Reset
+
+Minimum Viable Simple Game achieved. 
+There are still more game mechanics to implement e.g. (coins, poison time limits etc..). However, there is enough functionality to move forward and implement deltaDNA analysis, Unity Ads and deltaDNA CRM to personalize the user experience. 
+
+## 1.0.2 Add Basic deltaDNA event recording. 
+- Add game to deltaDNA. 
+- Download, Add and Start deltaDNA SDK
+- Automated session and device events recording (gameStarted & clientDevice)
