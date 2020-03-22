@@ -22,8 +22,12 @@ Goals
 - Setup HUD Displays
 - Setup Main Menu Text
 - Setup StartButton and Game State
-- Levels
+- Load Levels
 - Populate and Start Level
 - Initialise Hud
 - Snake Movement
 - Add Bodyparts
+- Collision Detection
+- Eat Food
+- Level Progression
+- Game Over and Reset

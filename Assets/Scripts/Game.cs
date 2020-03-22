@@ -7,7 +7,10 @@ public enum GameState
     INIT,
     READY,
     PLAYING,
-    DEAD
+    DEAD,
+    DYING,
+    LEVELCOMPLETE,
+    NEXTLEVEL
 }
 
 
