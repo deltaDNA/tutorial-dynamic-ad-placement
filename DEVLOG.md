@@ -39,3 +39,7 @@ There are still more game mechanics to implement e.g. (coins, poison time limits
 - Add game to deltaDNA. 
 - Download, Add and Start deltaDNA SDK
 - Automated session and device events recording (gameStarted & clientDevice)
+- Add some more events. sdkConfigured, missionStarted, missionCompleted, missionFailed
+
+TODO - Come back later and add some more detail to mission events (cost, poison, snake length, snake speed ....)
+

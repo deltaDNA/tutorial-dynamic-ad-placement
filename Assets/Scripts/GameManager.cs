@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-
+using DeltaDNA; 
 
 public class GameManager : MonoBehaviour
 {
@@ -85,6 +85,14 @@ public class GameManager : MonoBehaviour
         }
         else if (game.gameState == GameState.NEXTLEVEL)
         {
+            // Record MissionCompleted Event
+            GameEvent missionCompleted = new GameEvent("missionCompleted")
+                .AddParam("missionID", game.currentLevel.ToString())
+                .AddParam("missionName", string.Format("Mission {0}", game.currentLevel))
+                .AddParam("foodTarget", game.levels[game.currentLevel].food);
+
+            DDNA.Instance.RecordEvent(missionCompleted);
+
             game.currentLevel++; 
             if (game.currentLevel == game.levels.Count)
             {
@@ -94,6 +102,15 @@ public class GameManager : MonoBehaviour
         }
         else if(game.gameState == GameState.DEAD)
         {
+            // Record MissionFailed event
+            GameEvent missionFailed = new GameEvent("missionFailed")
+                .AddParam("missionID", game.currentLevel.ToString())
+                .AddParam("missionName", string.Format("Mission {0}", game.currentLevel))
+                .AddParam("foodRemaining", foodList.Count);
+
+            DDNA.Instance.RecordEvent(missionFailed);
+
+            
             ResetGame();
 
             txtStart.gameObject.SetActive(true);
@@ -150,6 +167,14 @@ public class GameManager : MonoBehaviour
         game.gameState = GameState.PLAYING;
 
 
+        // Record MissionStarted event
+        GameEvent missionStarted = new GameEvent("missionStarted")
+            .AddParam("missionID", game.currentLevel.ToString())
+            .AddParam("missionName", string.Format("Mission {0}", game.currentLevel))
+            .AddParam("foodTarget", game.levels[game.currentLevel].food); 
+
+        DDNA.Instance.RecordEvent(missionStarted);
+            
     }
 
 

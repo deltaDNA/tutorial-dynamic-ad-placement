@@ -25,9 +25,5 @@ public class HudManager : MonoBehaviour
         txtLevel.text = level.ToString();
         txtFoodRemaining.text = foodRemaining.ToString();
     }
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+
 }
