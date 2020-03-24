@@ -43,3 +43,12 @@ There are still more game mechanics to implement e.g. (coins, poison time limits
 
 TODO - Come back later and add some more detail to mission events (cost, poison, snake length, snake speed ....)
 
+## 1.0.3 Get Unity Ads installed and running.
+- Install Unity Ads through Unity Package Manager
+- Updated project to Unity 2019.3.1f1 to take advantage of latest Ads SDK
+- Updated Unity Ads to v3.4.4 in Unity Package Manager
+- Included Unity Ads library 
+- Configured GameId, PlacementId and testmode
+- Setup 4 x Ads listeners
+- Initialized Unity Ads
+- Added ShowAd() method, currently hardwired to occur on every failed mission.

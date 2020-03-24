@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Advertisements; 
 using DeltaDNA; 
 
-public class GameManager : MonoBehaviour
+public class GameManager : MonoBehaviour, IUnityAdsListener
 {
     // HUD Elements
     public HudManager hud;
@@ -47,12 +48,17 @@ public class GameManager : MonoBehaviour
     private float currentSpeed; 
     public float acceleration = 0.3f;
 
-
-
+    // Advertising
+    string gameID = "3521373";
+    bool testMode = false;
+    string placementId = "dynamic_placement";
 
     // Start is called before the first frame update
     void Start()
     {
+        Advertisement.AddListener(this);
+        Advertisement.Initialize(gameID, testMode);
+
         // These are for pulsing the start button
         initialScale = transform.localScale;
         finalScale = new Vector3(initialScale.x + 0.08f, initialScale.y + 0.08f, initialScale.z);
@@ -110,6 +116,7 @@ public class GameManager : MonoBehaviour
 
             DDNA.Instance.RecordEvent(missionFailed);
 
+            Advertisement.Show(placementId);
             
             ResetGame();
 
@@ -344,6 +351,26 @@ public class GameManager : MonoBehaviour
 
     }
 
+    // Unity Ads Listeners
+    public void OnUnityAdsReady(string placementId)
 
+    {
+
+    }
+
+    public void OnUnityAdsDidStart(string placementId)
+    {
+
+    }
+
+    public void OnUnityAdsDidError(string message)
+    {
+
+    }
+
+    public void OnUnityAdsDidFinish(string placementId, ShowResult showResult)
+    {
+
+    }
 
 }
