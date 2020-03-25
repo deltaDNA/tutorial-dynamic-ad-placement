@@ -13,11 +13,7 @@ public class HudManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        // Clear Hud
-        txtCoins.text = "";
-        txtLevel.text = "";
-        txtFoodRemaining.text = "";
-        
+       
     }
     public void UpdateHud(int coins, int level, int foodRemaining)
     {

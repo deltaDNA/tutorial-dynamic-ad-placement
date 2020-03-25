@@ -32,6 +32,8 @@ public class Game
 {
     public int currentLevel;
     public int maxLevel;
+    public int currencyBalance;
+    public int starterBalance;
 
 
     public List<Level> levels;

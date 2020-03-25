@@ -2,10 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.Advertisements; 
 using DeltaDNA; 
 
-public class GameManager : MonoBehaviour, IUnityAdsListener
+public class GameManager : MonoBehaviour
 {
     // HUD Elements
     public HudManager hud;
@@ -48,31 +47,32 @@ public class GameManager : MonoBehaviour, IUnityAdsListener
     private float currentSpeed; 
     public float acceleration = 0.3f;
 
-    // Advertising
-    string gameID = "3521373";
-    bool testMode = false;
-    string placementId = "dynamic_placement";
+
 
     // Start is called before the first frame update
     void Start()
     {
-        Advertisement.AddListener(this);
-        Advertisement.Initialize(gameID, testMode);
+        
+        // Load Levels
+        game.LoadLevels();
+        game.currentLevel = 0;
+        LoadCurrency();
 
         // These are for pulsing the start button
         initialScale = transform.localScale;
         finalScale = new Vector3(initialScale.x + 0.08f, initialScale.y + 0.08f, initialScale.z);
         sourceColor = new Color(1.0f, 1.0f, 1.0f, 0.5f);
         targetColor = new Color(1.0f, 1.0f, 1.0f, 1.0f);
-
+               
         // Find Arena Walls
         rBorder = GameObject.Find("border-right").transform;
         lBorder = GameObject.Find("border-left").transform;
         tBorder = GameObject.Find("border-top").transform;
         bBorder = GameObject.Find("border-bottom").transform;
 
-        // Load Levels
-        game.LoadLevels();
+
+        txtCost.text = string.Format("Cost {0} Coins", game.levels[game.currentLevel].cost);
+        hud.UpdateHud(game.currencyBalance, game.currentLevel, foodList.Count);
 
     }
 
@@ -91,19 +91,26 @@ public class GameManager : MonoBehaviour, IUnityAdsListener
         }
         else if (game.gameState == GameState.NEXTLEVEL)
         {
+            ReceiveCurrency(game.levels[game.currentLevel].reward);
+            hud.UpdateHud(game.currencyBalance, game.currentLevel, foodList.Count);
+
             // Record MissionCompleted Event
             GameEvent missionCompleted = new GameEvent("missionCompleted")
                 .AddParam("missionID", game.currentLevel.ToString())
                 .AddParam("missionName", string.Format("Mission {0}", game.currentLevel))
                 .AddParam("foodTarget", game.levels[game.currentLevel].food);
 
-            DDNA.Instance.RecordEvent(missionCompleted);
+            DDNA.Instance.RecordEvent(missionCompleted).Run();
 
             game.currentLevel++; 
             if (game.currentLevel == game.levels.Count)
             {
                 game.currentLevel = 0;
             }
+
+
+
+
             StartLevel(game.currentLevel);
         }
         else if(game.gameState == GameState.DEAD)
@@ -114,10 +121,8 @@ public class GameManager : MonoBehaviour, IUnityAdsListener
                 .AddParam("missionName", string.Format("Mission {0}", game.currentLevel))
                 .AddParam("foodRemaining", foodList.Count);
 
-            DDNA.Instance.RecordEvent(missionFailed);
-
-            Advertisement.Show(placementId);
-            
+            DDNA.Instance.RecordEvent(missionFailed).Run();
+                     
             ResetGame();
 
             txtStart.gameObject.SetActive(true);
@@ -131,8 +136,9 @@ public class GameManager : MonoBehaviour, IUnityAdsListener
 
     public void ResetGame()
     {
-        game.gameState = GameState.INIT; 
-        
+        game.gameState = GameState.INIT;
+        game.currentLevel = 0; 
+
         for (int i = foodList.Count-1; i >=0; i--)
         {
             GameObject o = foodList[i];
@@ -151,36 +157,49 @@ public class GameManager : MonoBehaviour, IUnityAdsListener
     }
     public void NewGame()
     {
-        Debug.Log("New Game");
-        currentSpeed = speed;
-        game.currentLevel = 0;
-        txtStart.gameObject.SetActive(false);
-        bttnStart.gameObject.SetActive(false);
-        txtMessage.gameObject.SetActive(false);
-        txtCost.gameObject.SetActive(false);
 
-        StartLevel(game.currentLevel);
+
+        if (game.currencyBalance >= game.levels[game.currentLevel].cost)
+        {
+            Debug.Log("New Game");
+           
+            currentSpeed = speed;
+            
+            txtStart.gameObject.SetActive(false);
+            bttnStart.gameObject.SetActive(false);
+            txtMessage.gameObject.SetActive(false);
+            txtCost.gameObject.SetActive(false);
+
+            StartLevel(game.currentLevel);
+        }
+
     }
 
     public void StartLevel(int LevelNo)
     {
-        SpawnFood(game.levels[game.currentLevel].food);
-        if (playerSnake == null)
+        if (game.currencyBalance >= game.levels[game.currentLevel].cost)
         {
-            SpawnSnake();
-        }
-        hud.UpdateHud(0, game.currentLevel + 1, foodList.Count);
+            SpendCurrency(game.levels[game.currentLevel].cost);
 
-        game.gameState = GameState.PLAYING;
+            SpawnFood(game.levels[game.currentLevel].food);
+            if (playerSnake == null)
+            {
+                SpawnSnake();
+            }
+            hud.UpdateHud(game.currencyBalance, game.currentLevel + 1, foodList.Count);
+
+            game.gameState = GameState.PLAYING;
 
 
-        // Record MissionStarted event
-        GameEvent missionStarted = new GameEvent("missionStarted")
-            .AddParam("missionID", game.currentLevel.ToString())
-            .AddParam("missionName", string.Format("Mission {0}", game.currentLevel))
-            .AddParam("foodTarget", game.levels[game.currentLevel].food); 
+            // Record MissionStarted event
+            GameEvent missionStarted = new GameEvent("missionStarted")
+                .AddParam("missionID", game.currentLevel.ToString())
+                .AddParam("missionName", string.Format("Mission {0}", game.currentLevel))
+                .AddParam("foodTarget", game.levels[game.currentLevel].food);
 
-        DDNA.Instance.RecordEvent(missionStarted);
+            DDNA.Instance.RecordEvent(missionStarted).Run();
+
+        } // TODO add condition for not enough funds later
             
     }
 
@@ -264,7 +283,7 @@ public class GameManager : MonoBehaviour, IUnityAdsListener
         {
             game.gameState = GameState.DYING;
 
-            StartCoroutine(DisplayMessage("GameOver", GameState.DEAD));
+            StartCoroutine(DisplayMessage("GameOver", 0, 1, GameState.DEAD));
             
         }
 
@@ -325,24 +344,28 @@ public class GameManager : MonoBehaviour, IUnityAdsListener
         }
         
         // Update Hud
-        hud.UpdateHud(0, game.currentLevel + 1, foodList.Count);
+        hud.UpdateHud(game.currencyBalance, game.currentLevel + 1, foodList.Count);
 
         // Check Level Complete
         if(foodList.Count == 0 )
         {
             game.gameState = GameState.LEVELCOMPLETE;
-            StartCoroutine(DisplayMessage("Level Up", GameState.NEXTLEVEL));
+
+            string msg = string.Format("Level Up :: {0} Coins Rewarded", game.levels[game.currentLevel].reward);
+            msg += string.Format("\nNext Level Costs {0} ", game.levels[game.currentLevel].cost);
+                       
+            StartCoroutine(DisplayMessage(msg, game.levels[game.currentLevel].reward, 2, GameState.NEXTLEVEL));
         }
 
     }
 
 
-    IEnumerator DisplayMessage(string message, GameState nextState)
+    IEnumerator DisplayMessage(string message, int rewardAmount, int duration, GameState nextState)
     {
         txtMessage.text = message; 
         txtMessage.gameObject.SetActive(true);
 
-        yield return new WaitForSeconds(1);
+        yield return new WaitForSeconds(duration);
 
         
         txtMessage.gameObject.SetActive(false);
@@ -351,26 +374,40 @@ public class GameManager : MonoBehaviour, IUnityAdsListener
 
     }
 
-    // Unity Ads Listeners
-    public void OnUnityAdsReady(string placementId)
 
+
+
+
+    //-----CURRENCY-------
+
+    public void LoadCurrency()
     {
-
+        if (PlayerPrefs.HasKey("coins"))
+        {
+            game.currencyBalance = PlayerPrefs.GetInt("coins");
+        } 
+        else
+        {
+            // likely to be first time game has run, initialise player with starting coins.
+            game.currencyBalance = game.starterBalance;
+            SaveCurrency();
+        }
     }
-
-    public void OnUnityAdsDidStart(string placementId)
+    public void SaveCurrency()
     {
-
+        PlayerPrefs.SetInt("coins", game.currencyBalance);
     }
-
-    public void OnUnityAdsDidError(string message)
+    public void SpendCurrency(int amount)
     {
-
+        game.currencyBalance -= amount;
+        hud.UpdateHud(game.currencyBalance, game.currentLevel + 1, foodList.Count);
+        SaveCurrency();
     }
-
-    public void OnUnityAdsDidFinish(string placementId, ShowResult showResult)
+    public void ReceiveCurrency(int amount)
     {
-
+        game.currencyBalance += amount;
+        hud.UpdateHud(game.currencyBalance, game.currentLevel + 1, foodList.Count);
+        SaveCurrency();
     }
 
 }

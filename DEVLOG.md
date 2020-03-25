@@ -52,3 +52,17 @@ TODO - Come back later and add some more detail to mission events (cost, poison,
 - Setup 4 x Ads listeners
 - Initialized Unity Ads
 - Added ShowAd() method, currently hardwired to occur on every failed mission.
+
+## 1.0.4 Currency rewards and AdImpression events
+- Implement currency (spend on levels, reward from ads and levels)
+- Implement mission reward celebration 
+
+## 1.0.5 DeltaDNA campaigns control Ad
+- Ad Placement, Reward value, Frequency controlled dynamically.
+- Create Game Parameters and Actions to send data to client
+- Create Campaign to AB Test and send Ad control data to client
+- Implement Callbacks in game and move ShowAd command inside the Campaign callback.
+- Apply Reward Amount if player watched ad to completion
+- Record adImpression event 
+
+
