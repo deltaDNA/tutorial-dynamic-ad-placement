@@ -917,6 +917,8 @@ MonoBehaviour:
     levels: []
     gameState: 0
   food: {fileID: 2928429734638903234, guid: 4d1b16f87be1f9e438f2b91b59f418fb, type: 3}
+  coinDrop: {fileID: 1514810843141593535, guid: 3a121867fd230404f8ac4b218bdecc15,
+    type: 3}
   snakePrefab: {fileID: 1482889146334495033, guid: 129ef7581b197134d8a869e48c1479c3,
     type: 3}
   playerSnake: {fileID: 0}

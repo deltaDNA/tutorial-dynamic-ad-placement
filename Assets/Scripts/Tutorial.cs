@@ -136,14 +136,12 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
             isAdFinished = true;
             gameManager.ReceiveCurrency(adRewardValue);
             
-         
-
         }
         GameEvent adEvent = new GameEvent("adImpression")
                 .AddParam("adCompletionStatus", isAdFinished ? "COMPLETED" : "INCOMPLETE")
                 .AddParam("adProvider", "Unity Ads")
                 .AddParam("placementType", "REWARDED AD")
-                .AddParam("placmentId", placementId)
+                .AddParam("placementId", placementId)
                 .AddParam("placementType", placementId);
 
         DDNA.Instance.RecordEvent(adEvent).Run();

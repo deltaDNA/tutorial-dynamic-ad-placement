@@ -27,6 +27,7 @@ public class GameManager : MonoBehaviour
 
     public Game game = new Game();
     public GameObject food;
+    public GameObject coinDrop;
     private List<GameObject> foodList = new List<GameObject>();
 
     // Player Snake
@@ -91,14 +92,14 @@ public class GameManager : MonoBehaviour
         }
         else if (game.gameState == GameState.NEXTLEVEL)
         {
-            ReceiveCurrency(game.levels[game.currentLevel].reward);
-            hud.UpdateHud(game.currencyBalance, game.currentLevel, foodList.Count);
+
 
             // Record MissionCompleted Event
             GameEvent missionCompleted = new GameEvent("missionCompleted")
                 .AddParam("missionID", game.currentLevel.ToString())
                 .AddParam("missionName", string.Format("Mission {0}", game.currentLevel))
-                .AddParam("foodTarget", game.levels[game.currentLevel].food);
+                .AddParam("foodTarget", game.levels[game.currentLevel].food)                
+                .AddParam("missionReward",game.levels[game.currentLevel].reward);
 
             DDNA.Instance.RecordEvent(missionCompleted).Run();
 
@@ -119,7 +120,7 @@ public class GameManager : MonoBehaviour
             GameEvent missionFailed = new GameEvent("missionFailed")
                 .AddParam("missionID", game.currentLevel.ToString())
                 .AddParam("missionName", string.Format("Mission {0}", game.currentLevel))
-                .AddParam("foodRemaining", foodList.Count);
+                .AddParam("foodRemaining", foodList.Count);                
 
             DDNA.Instance.RecordEvent(missionFailed).Run();
                      
@@ -195,7 +196,8 @@ public class GameManager : MonoBehaviour
             GameEvent missionStarted = new GameEvent("missionStarted")
                 .AddParam("missionID", game.currentLevel.ToString())
                 .AddParam("missionName", string.Format("Mission {0}", game.currentLevel))
-                .AddParam("foodTarget", game.levels[game.currentLevel].food);
+                .AddParam("foodTarget", game.levels[game.currentLevel].food)
+                .AddParam("missionCost", game.levels[game.currentLevel].cost);                
 
             DDNA.Instance.RecordEvent(missionStarted).Run();
 
@@ -351,6 +353,10 @@ public class GameManager : MonoBehaviour
         {
             game.gameState = GameState.LEVELCOMPLETE;
 
+            ReceiveCurrency(game.levels[game.currentLevel].reward);
+            hud.UpdateHud(game.currencyBalance, game.currentLevel, foodList.Count);
+
+
             string msg = string.Format("Level Up :: {0} Coins Rewarded", game.levels[game.currentLevel].reward);
             msg += string.Format("\nNext Level Costs {0} ", game.levels[game.currentLevel].cost);
                        
@@ -408,6 +414,8 @@ public class GameManager : MonoBehaviour
         game.currencyBalance += amount;
         hud.UpdateHud(game.currencyBalance, game.currentLevel + 1, foodList.Count);
         SaveCurrency();
+        GameObject ob = Instantiate(coinDrop);
+        Destroy(ob, 2.5f);
     }
 
 }

@@ -65,4 +65,7 @@ TODO - Come back later and add some more detail to mission events (cost, poison,
 - Apply Reward Amount if player watched ad to completion
 - Record adImpression event 
 
+## 1.0.6 Clean Up
+- Add mission cost and rewards to mission events.
+- Add celebration coin drop 
 
