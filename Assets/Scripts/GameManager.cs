@@ -173,6 +173,12 @@ public class GameManager : MonoBehaviour
 
             StartLevel(game.currentLevel);
         }
+        else
+        {
+
+            GameEvent outOfCoins = new GameEvent("outOfCoins");
+            DDNA.Instance.RecordEvent(outOfCoins).Run();
+        }
 
     }
 

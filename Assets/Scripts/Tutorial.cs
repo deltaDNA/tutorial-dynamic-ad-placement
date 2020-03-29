@@ -46,7 +46,7 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
     }
 
 
-    // The callback indicating that the deltaDNA has downloaded its session configuration, including Hey Franco, 
+    // The callback indicating that the deltaDNA has downloaded its session configuration, including
     // Event Triggered Campaign actions and logic, is used to record a "sdkConfigured" event 
     // that can be used provision remotely configured parameters. 
     // i.e. deferring the game session config until it knows it has received any info it might need
@@ -72,12 +72,19 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         {
             if (System.Convert.ToInt32(gameParameters["adShow"]) == 1)
             {
+
+                Advertisement.Show(placementId);
+
                 if (gameParameters.ContainsKey("adRewardValue"))
                 {
                     adRewardValue = System.Convert.ToInt32(gameParameters["adRewardValue"]);
                 }
-                Advertisement.Show(placementId);
+                
             }
+        }
+        else if (gameParameters.ContainsKey("realCurrencyAmount"))
+        {
+            gameManager.ReceiveCurrency(System.Convert.ToInt32(gameParameters["realCurrencyAmount"]));
         }
 
 
@@ -137,6 +144,7 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
             gameManager.ReceiveCurrency(adRewardValue);
             
         }
+
         GameEvent adEvent = new GameEvent("adImpression")
                 .AddParam("adCompletionStatus", isAdFinished ? "COMPLETED" : "INCOMPLETE")
                 .AddParam("adProvider", "Unity Ads")
