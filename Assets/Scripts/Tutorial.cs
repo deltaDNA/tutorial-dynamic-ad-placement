@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using DeltaDNA;
 using UnityEngine.Advertisements;
+
 public class Tutorial : MonoBehaviour, IUnityAdsListener
 {
     public GameManager gameManager;
@@ -64,31 +65,7 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         DDNA.Instance.RecordEvent(gameEvent).Run();
     }
 
-    private void myGameParameterHandler(Dictionary<string, object> gameParameters)
-    {
-        // Parameters Received      
-        Debug.Log("Received game parameters from event trigger: " + DeltaDNA.MiniJSON.Json.Serialize(gameParameters));
-        if (gameParameters.ContainsKey("adShow"))
-        {
-            if (System.Convert.ToInt32(gameParameters["adShow"]) == 1)
-            {
 
-                Advertisement.Show(placementId);
-
-                if (gameParameters.ContainsKey("adRewardValue"))
-                {
-                    adRewardValue = System.Convert.ToInt32(gameParameters["adRewardValue"]);
-                }
-                
-            }
-        }
-        else if (gameParameters.ContainsKey("realCurrencyAmount"))
-        {
-            gameManager.ReceiveCurrency(System.Convert.ToInt32(gameParameters["realCurrencyAmount"]));
-        }
-
-
-    }
 
     private void myImageMessageHandler(ImageMessage imageMessage)
     {
@@ -106,7 +83,7 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
             // Process parameters on image message if player triggers image message action
             if (imageMessage.Parameters != null) myGameParameterHandler(imageMessage.Parameters);
         };
-
+        
         imageMessage.OnDidReceiveResources += () =>
         {
             Debug.Log("Received Image Message Assets");
@@ -116,6 +93,34 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         // the image message is already cached and prepared so it will show instantly
         imageMessage.Show();
     }
+
+    private void myGameParameterHandler(Dictionary<string, object> gameParameters)
+    {
+        // ------------------------------------------------------------------------------------------
+        // ------------------------------------------------------------------------------------------
+        // Parameters to remotely control Ads Received      
+        // ------------------------------------------------------------------------------------------
+        Debug.Log("Received game parameters from event trigger: " + DeltaDNA.MiniJSON.Json.Serialize(gameParameters));
+        if (gameParameters.ContainsKey("adShow"))
+        {
+            if (System.Convert.ToInt32(gameParameters["adShow"]) == 1)
+            {
+                Advertisement.Show(placementId); // <<<< This line of code was moved to turn fixed placements into dynamic ones <<<<
+
+                if (gameParameters.ContainsKey("adRewardValue"))
+                {
+                    adRewardValue = System.Convert.ToInt32(gameParameters["adRewardValue"]);
+                }
+            }
+        }
+        else if (gameParameters.ContainsKey("realCurrencyAmount"))
+        {
+            gameManager.ReceiveCurrency(System.Convert.ToInt32(gameParameters["realCurrencyAmount"]));
+        }
+        // --------------------------------------------------------------------------------------------
+
+    }
+
 
     // Unity Ads Listeners
     public void OnUnityAdsReady(string placementId)
