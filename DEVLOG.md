@@ -68,4 +68,4 @@ TODO - Come back later and add some more detail to mission events (cost, poison,
 ## 1.0.6 Clean Up
 - Add mission cost and rewards to mission events.
 - Add celebration coin drop 
-
+- Write documentaion and record video
