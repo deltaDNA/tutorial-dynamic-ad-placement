@@ -16,7 +16,7 @@ You will learn how to:
 
 The great news is that all this can be achieved very easily with only a few lines of code.
 
-[Watch the Video below](https://www.youtube.com/watch?v=gTRPqygCJ8Q "Dynamic Ad Placement") to see it in action.
+[Watch the Video below](https://www.youtube.com/watch?v=nVFiKqHmFLw&t=0s "Dynamic Ad Placement") to see it in action.
 <div align="center">
       <a href="https://www.youtube.com/watch?v=nVFiKqHmFLw&t=0s">
      <img 
