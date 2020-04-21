@@ -18,9 +18,9 @@ The great news is that all this can be achieved very easily with only a few line
 
 [Watch the Video below](https://www.youtube.com/watch?v=gTRPqygCJ8Q "Dynamic Ad Placement") to see it in action.
 <div align="center">
-      <a href="https://www.youtube.com/watch?v=gTRPqygCJ8Q&t=0s">
+      <a href="https://www.youtube.com/watch?v=nVFiKqHmFLw&t=0s">
      <img 
-      src="https://img.youtube.com/vi/gTRPqygCJ8Q/0.jpg" 
+      src="https://i.ytimg.com/vi/nVFiKqHmFLw/hqdefault.jpg?sqp=-oaymwEZCPYBEIoBSFXyq4qpAwsIARUAAIhCGAFwAQ==&amp;rs=AOn4CLApk_nJo0cOmRkVnAQh3mhs2VeQnw" 
       alt="Dynamic Ad Placement" 
       style="width:100%;">
       </a>
