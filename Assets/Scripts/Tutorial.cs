@@ -7,19 +7,29 @@ using UnityEngine.Advertisements;
 public class Tutorial : MonoBehaviour, IUnityAdsListener
 {
     public GameManager gameManager;
-    
-    // Advertising
-    string gameID = "3521373";
-    bool testMode = false;
-    string placementId = "dynamic_placement";
 
+    // Unit Ads
+    [Header("Unity Ads")]
+    public string unityAdsGameId = "3521373";
+    public bool   unityAdsTestMode = false;
+    public string unityAdsPlacementId = "dynamic_placement";
+
+    // Mopub Ads
+    [Header("MoPub Ads")]
+    public string[] _rewardedAdUnits = { "920b6145fb1546cf8b5cf2ac34638bb7" };
+
+    // Properties
+    [Header("Properties")]
+    public bool isMoPubAdsEnabled = false;
+    public bool isUnityAdsEnabled = true;
     private int adRewardValue;
-
+    
     // Start is called before the first frame update
     void Start()
     {
-        Advertisement.AddListener(this);
-        Advertisement.Initialize(gameID, testMode);
+        // Congifure Enabled Ad Networks
+        if (isUnityAdsEnabled) ConfigureUnityAds();
+        if (isMoPubAdsEnabled) ConfigureMoPubAds();
 
 
         // Hook up callback to fire when DDNA SDK has received session config info, including Event Triggered campaigns.
@@ -105,8 +115,13 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         {
             if (System.Convert.ToInt32(gameParameters["adShow"]) == 1)
             {
-                Advertisement.Show(placementId); // <<<< This line of code was moved to turn fixed placements into dynamic ones <<<<
+                // Rewarded Ad display controlled by Engage "adShow" game parameter
+                if (isUnityAdsEnabled)
+                    UnityShowRewardedAd();
+                else if (isMoPubAdsEnabled)
+                    MoPubShowRewardedAd();
 
+                // Rewarded Ad Value controlled by Engage "adRewardValue" game parameter                               
                 if (gameParameters.ContainsKey("adRewardValue"))
                 {
                     adRewardValue = System.Convert.ToInt32(gameParameters["adRewardValue"]);
@@ -121,22 +136,35 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
 
     }
 
+    #region UnityAds
+    /// <summary>
+    /// Unity Ads Stuff
+    /// </summary>
+    /// 
 
+    public void ConfigureUnityAds()
+    {
+        // Unity Ads Configuration
+        Advertisement.AddListener(this);
+        Advertisement.Initialize(unityAdsGameId, unityAdsTestMode);
+    }
+
+    public void UnityShowRewardedAd()
+    {
+        Advertisement.Show(unityAdsPlacementId); 
+    }
     // Unity Ads Listeners
     public void OnUnityAdsReady(string placementId)
-
     {
-
+        Debug.Log("Unity Ad Ready for PlacementID: " + placementId);
     }
-
-    public void OnUnityAdsDidStart(string placementId)
-    {
-
-    }
-
     public void OnUnityAdsDidError(string message)
     {
-
+        Debug.Log("Unity Ads Error: " + message);
+    }
+    public void OnUnityAdsDidStart(string placementId)
+    {
+        Debug.Log("Unity Ad Started for PlacementID: " + placementId);
     }
 
     public void OnUnityAdsDidFinish(string placementId, ShowResult showResult)
@@ -159,7 +187,57 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
 
         DDNA.Instance.RecordEvent(adEvent).Run();
     }
+    #endregion
 
+    #region MoPubAds
+    /// <summary>
+    /// MoPub SDK Stuff
+    /// </summary>    
+    /// 
 
+    public void ConfigureMoPubAds()
+    {
+        // MoPub Ads
+        // MoPubManager.OnRewardedVideoLoadedEvent += OnRewardedVideoLoadedEvent;
+        //MoPubManager.OnRewardedVideoFailedEvent += OnRewardedVideoFailedEvent;
+        //MoPubManager.OnRewardedVideoFailedToPlayEvent += OnRewardedVideoFailedToPlayEvent;
+        MoPubManager.OnRewardedVideoClosedEvent += OnMoPubRewardedVideoClosedEvent;
+        MoPub.LoadRewardedVideoPluginsForAdUnits(_rewardedAdUnits);
+        MoPubManager.OnImpressionTrackedEvent += OnMoPubImpressionTrackedEvent;
+    }
+    public void MoPubSdkInitialized()
+    {
+        // UpdateConsentValues();
+        Debug.Log("MoPubSDK Initialised");
+    }
+    public void MoPubRequestRewardedAd()
+    {
+        Debug.Log("MoPubSDK Requesting Ad");
+        MoPub.RequestRewardedVideo(
+            adUnitId: _rewardedAdUnits[0], keywords: "rewarded, video, mopub",
+            latitude: 37.7833, longitude: 122.4167, customerId: "customer101");
+    }
+    public void MoPubShowRewardedAd()
+    {
+        Debug.Log("MoPubSDK Showing Ad");
+        MoPub.ShowRewardedVideo(_rewardedAdUnits[0]);
+    }
+    private void OnMoPubRewardedVideoClosedEvent(string adUnitId)
+    {
+        Debug.Log("MoPubSDK Rewarded Ad Closed - AdUnitID: " + adUnitId);
+    }
+    private void OnMoPubImpressionTrackedEvent(string adUnitId, MoPub.ImpressionData impressionData)
+    {
+        Debug.Log("Impression Data" + impressionData.JsonRepresentation.ToString());
+        GameEvent adEvent = new GameEvent("adImpression")
+         .AddParam("adCompletionStatus", "COMPLETED")
+         .AddParam("adProvider", "MoPub : " + impressionData.NetworkName)
+         .AddParam("placementType", "REWARDED AD")
+         .AddParam("placementId", impressionData.NetworkPlacementId); 
+ 
+         
 
+        DDNA.Instance.RecordEvent(adEvent).Run();
+    }
+    #endregion
 }
