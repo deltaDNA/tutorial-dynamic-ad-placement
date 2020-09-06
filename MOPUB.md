@@ -104,7 +104,7 @@ private void OnMoPubImpressionTrackedEvent(string adUnitId, MoPub.ImpressionData
 ```
 
 The resulting ``adImpression`` event will look like this in the deltaDNA ``SETUP > Event Browser`` tool. 
-![adImpression Event](Images/MoPub/adImpressionEvent.jpg)
+![adImpression Event](/Images/Mopub/adImpressionEvent.jpg)
 
 
 
