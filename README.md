@@ -261,4 +261,4 @@ The tutorial code has also been cleaned up a bit. The Unity and MoPub Ad code an
         MoPubShowRewardedAd();
     }...
 ```
-Check out the [MoPub Ads ReadMe](/MOPUB.MD) for more details.
+Check out the [MoPub Ads ReadMe](/MOPUB.md) for more details.
