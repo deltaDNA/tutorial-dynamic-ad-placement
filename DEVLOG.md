@@ -71,7 +71,7 @@ TODO - Come back later and add some more detail to mission events (cost, poison,
 - Write documentaion and record video
 
 ## 1.0.7 Add Mopub Ads
-- [Check out the MoPub Readme](MOPUB.MD)
+- [Check out the MoPub Readme](/MOPUB.md)
 - Implement MoPub Rewarded Ads
 - Record AdImpression event 
 - Send impression value as ``adEcpmUsd`` field on ``adImpression`` event
