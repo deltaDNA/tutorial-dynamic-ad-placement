@@ -17,6 +17,7 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
     // Mopub Ads
     [Header("MoPub Ads")]
     public string[] _rewardedAdUnits = { "920b6145fb1546cf8b5cf2ac34638bb7" };
+    public bool isMoPubAdLoaded = false; 
 
     // Properties
     [Header("Properties")]
@@ -117,9 +118,13 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
             {
                 // Rewarded Ad display controlled by Engage "adShow" game parameter
                 if (isUnityAdsEnabled)
+                {
                     UnityShowRewardedAd();
+                }
                 else if (isMoPubAdsEnabled)
+                {
                     MoPubShowRewardedAd();
+                }
 
                 // Rewarded Ad Value controlled by Engage "adRewardValue" game parameter                               
                 if (gameParameters.ContainsKey("adRewardValue"))
@@ -153,6 +158,7 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
     {
         Advertisement.Show(unityAdsPlacementId); 
     }
+
     // Unity Ads Listeners
     public void OnUnityAdsReady(string placementId)
     {
@@ -166,7 +172,6 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
     {
         Debug.Log("Unity Ad Started for PlacementID: " + placementId);
     }
-
     public void OnUnityAdsDidFinish(string placementId, ShowResult showResult)
     {
         bool isAdFinished = false; 
@@ -189,6 +194,7 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
     }
     #endregion
 
+
     #region MoPubAds
     /// <summary>
     /// MoPub SDK Stuff
@@ -198,43 +204,63 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
     public void ConfigureMoPubAds()
     {
         // MoPub Ads
-        // MoPubManager.OnRewardedVideoLoadedEvent += OnRewardedVideoLoadedEvent;
-        //MoPubManager.OnRewardedVideoFailedEvent += OnRewardedVideoFailedEvent;
-        //MoPubManager.OnRewardedVideoFailedToPlayEvent += OnRewardedVideoFailedToPlayEvent;
+        MoPubManager.OnRewardedVideoLoadedEvent += OnMopubRewardedVideoLoadedEvent;
         MoPubManager.OnRewardedVideoClosedEvent += OnMoPubRewardedVideoClosedEvent;
-        MoPub.LoadRewardedVideoPluginsForAdUnits(_rewardedAdUnits);
         MoPubManager.OnImpressionTrackedEvent += OnMoPubImpressionTrackedEvent;
+
+        MoPub.LoadRewardedVideoPluginsForAdUnits(_rewardedAdUnits);
     }
     public void MoPubSdkInitialized()
     {
         // UpdateConsentValues();
         Debug.Log("MoPubSDK Initialised");
+        MoPubRequestRewardedAd();
     }
     public void MoPubRequestRewardedAd()
     {
         Debug.Log("MoPubSDK Requesting Ad");
-        MoPub.RequestRewardedVideo(
-            adUnitId: _rewardedAdUnits[0], keywords: "rewarded, video, mopub",
-            latitude: 37.7833, longitude: 122.4167, customerId: "customer101");
+        MoPub.RequestRewardedVideo(_rewardedAdUnits[0]);
     }
     public void MoPubShowRewardedAd()
     {
-        Debug.Log("MoPubSDK Showing Ad");
-        MoPub.ShowRewardedVideo(_rewardedAdUnits[0]);
+        if (isMoPubAdLoaded)
+        {
+            Debug.Log("MoPubSDK Showing Ad");
+            MoPub.ShowRewardedVideo(_rewardedAdUnits[0]);
+        }
+        else
+        {
+            Debug.Log("Unable to Show MoPub Ad, none loaded at this time!");
+        }
+    }
+    private void OnMopubRewardedVideoLoadedEvent(string adUnitId)
+    {
+        Debug.Log("Rewarded Ad Loaded for AdUnitID: " + adUnitId);
+        isMoPubAdLoaded = true;
+
     }
     private void OnMoPubRewardedVideoClosedEvent(string adUnitId)
     {
         Debug.Log("MoPubSDK Rewarded Ad Closed - AdUnitID: " + adUnitId);
+        isMoPubAdLoaded = false;
+        MoPubRequestRewardedAd();
     }
     private void OnMoPubImpressionTrackedEvent(string adUnitId, MoPub.ImpressionData impressionData)
     {
+        // The impression data from MoPub does contain additional parameters that haven't been added 
+        // to the adImpression event in this example, but it you could extend this event in the Event Manager tool to accomodate them.
         Debug.Log("Impression Data" + impressionData.JsonRepresentation.ToString());
+        
+
         GameEvent adEvent = new GameEvent("adImpression")
          .AddParam("adCompletionStatus", "COMPLETED")
-         .AddParam("adProvider", "MoPub : " + impressionData.NetworkName)
+         .AddParam("adProvider", "MoPub ")
          .AddParam("placementType", "REWARDED AD")
-         .AddParam("placementId", impressionData.NetworkPlacementId); 
- 
+         .AddParam("placementId", impressionData.AdUnitId)
+         .AddParam("placementName",impressionData.AdUnitName);
+
+        // Add impression value if available. Multiplying publisher revenue by 1000 to get CPM value
+        if (impressionData.PublisherRevenue != null) adEvent.AddParam("adEcpmUsd", System.Convert.ToDouble(impressionData.PublisherRevenue)*1000); 
          
 
         DDNA.Instance.RecordEvent(adEvent).Run();

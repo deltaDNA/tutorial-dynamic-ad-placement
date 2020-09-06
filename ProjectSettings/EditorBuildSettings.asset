@@ -8,10 +8,4 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Main.unity
     guid: 63e4903b247ff624f90c30a7506b7128
-  - enabled: 0
-    path: Assets/MoPub/Sample/MoPubDemoScene.unity
-    guid: 7cd2fc251eb064b36a2cc399c8f664f1
-  - enabled: 0
-    path: Assets/MoPub/Sample/MoPubDemoSceneBasic.unity
-    guid: 153c8656e5a55d743aa6697daeacec91
   m_configObjects: {}
