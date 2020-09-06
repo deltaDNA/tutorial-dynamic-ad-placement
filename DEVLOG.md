@@ -70,6 +70,9 @@ TODO - Come back later and add some more detail to mission events (cost, poison,
 - Add celebration coin drop 
 - Write documentaion and record video
 
-## 1.0.7 Add Mopub Adds
+## 1.0.7 Add Mopub Ads
+- [Check out the MoPub Readme](MOPUB.MD)
 - Implement MoPub Rewarded Ads
-- Record AdImpression event containing AdEcpm
+- Record AdImpression event 
+- Send impression value as ``adEcpmUsd`` field on ``adImpression`` event
+  

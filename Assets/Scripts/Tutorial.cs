@@ -211,8 +211,7 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         MoPub.LoadRewardedVideoPluginsForAdUnits(_rewardedAdUnits);
     }
     public void MoPubSdkInitialized()
-    {
-        // UpdateConsentValues();
+    {        
         Debug.Log("MoPubSDK Initialised");
         MoPubRequestRewardedAd();
     }

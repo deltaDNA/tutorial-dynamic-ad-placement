@@ -237,3 +237,28 @@ It really is that simple! With just a few lines of code and some simple campaign
 Whilst the techniques above have used Unity Ads, the same methodology can be applied to other Ad Networks or Mediators. 
 
 If you have any questions or suggestions for other tutorials, please contact support@deltadna.com
+
+## Update - MoPub Ads
+This tutorial has been updated since it was originally written and the video created. The update extends it to support **MoPub Ads** as well as **Unity Ads**. The reason for this is to demonstrate a MoPub Ads integration and in particular their [Impression Level Revenue Data (ILRD)](https://developers.mopub.com/publishers/unity/impression-data/) and show how it can be captured at runtime and sent to deltaDNA in order to report and analyse player level Ad LTV. 
+
+As well as adding the MoPub SDK, a few tweaks have been made to the tutorial code to easily demonstrate both the Ad integrations. 
+
+We could have extended the Engage portion of the tutorial to dynamically control which netwok to use at runtime. But for the sake of simplicity and to make it easier to see each of the networks in isolation, we simply put a couple of boolean properties on the ``Tutorial Game Object``.
+
+![Ad Network Selection](Images/Mopub/AdNetworkSelector.jpg)
+
+The tutorial code has also been cleaned up a bit. The Unity and MoPub Ad code and listeners have been moved to their own regions towards the end of the script and the Game Parameter Handler tidied up. 
+```csharp
+  if (System.Convert.ToInt32(gameParameters["adShow"]) == 1)
+  {
+    // Rewarded Ad display controlled by Engage "adShow" game parameter
+    if (isUnityAdsEnabled)
+    {
+        UnityShowRewardedAd();
+    }
+    else if (isMoPubAdsEnabled)
+    {
+        MoPubShowRewardedAd();
+    }...
+```
+Check out the [MoPub Ads ReadMe](MOPUB.MD) for more details.
