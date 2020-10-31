@@ -1,19 +1,12 @@
 fileFormatVersion: 2
-guid: bb6999c8a5ce4ba99688ec579babe5b7
-labels:
-- gvh
-- gvh_targets-editor
-- gvh_version-1.2.136.0
+guid: 345443e0b12834a1586d214123396b2d
 PluginImporter:
   externalObjects: {}
   serializedVersion: 2
   iconMap: {}
   executionOrder: {}
-  defineConstraints: []
   isPreloaded: 0
   isOverridable: 0
-  isExplicitlyReferenced: 0
-  validateReferences: 1
   platformData:
   - first:
       Any: 
@@ -23,15 +16,9 @@ PluginImporter:
   - first:
       Editor: Editor
     second:
-      enabled: 0
+      enabled: 1
       settings:
         DefaultValueInitialized: true
-  - first:
-      Windows Store Apps: WindowsStoreApps
-    second:
-      enabled: 0
-      settings:
-        CPU: AnyCPU
   userData: 
   assetBundleName: 
   assetBundleVariant: 
