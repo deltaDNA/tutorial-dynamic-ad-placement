@@ -12,7 +12,7 @@ public class Snake : MonoBehaviour
     }
     void OnTriggerEnter(Collider c)
     {
-        Debug.Log("Collider " + c.name);
+       // Debug.Log("Collider " + c.name);
         if(c.name.StartsWith("Food"))
         {
             gm.EatFood(c.gameObject);

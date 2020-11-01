@@ -1829,8 +1829,10 @@ MonoBehaviour:
   _rewardedAdUnits:
   - 920b6145fb1546cf8b5cf2ac34638bb7
   isMoPubAdLoaded: 0
+  appKey: 85460dcd
   isMoPubAdsEnabled: 0
-  isUnityAdsEnabled: 1
+  isUnityAdsEnabled: 0
+  isIronSourceAdsEnabled: 1
 --- !u!4 &1276440120
 Transform:
   m_ObjectHideFlags: 0
