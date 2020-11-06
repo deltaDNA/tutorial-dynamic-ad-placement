@@ -6,6 +6,15 @@ using DeltaDNA;
 
 public class GameManager : MonoBehaviour
 {
+    public enum SwipeDirection
+    {
+        None,
+        Up,
+        Down,
+        Right,
+        Left
+    }
+
     // HUD Elements
     public HudManager hud;
     public Text txtStart;
@@ -48,6 +57,9 @@ public class GameManager : MonoBehaviour
     private float currentSpeed; 
     public float acceleration = 0.3f;
 
+    // Touch Input
+    private Vector2 touchStart = Vector2.zero;
+    private SwipeDirection swipeDirection = SwipeDirection.None ;
 
 
     // Start is called before the first frame update
@@ -80,6 +92,9 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+
+
+
         if (game.gameState == GameState.READY)
         {
             // Pulse the Start Button Size and Color
@@ -88,6 +103,31 @@ public class GameManager : MonoBehaviour
         }
         else if (game.gameState == GameState.PLAYING)
         {
+            if (Input.touchCount > 0)
+            {                
+                Touch touch = Input.GetTouch(0);
+               
+                if (touch.phase == TouchPhase.Began && swipeDirection ==SwipeDirection.None)
+                {
+                    touchStart = touch.position;
+                }
+                else if (touch.phase == TouchPhase.Moved && swipeDirection == SwipeDirection.None)
+                {                   
+                    Vector2 direction = touch.position - touchStart; 
+
+                    if (System.Math.Abs(direction.x) > System.Math.Abs(direction.y))
+                    {
+                        // Horizontal Swipe
+                        swipeDirection = direction.x > 0 ? SwipeDirection.Right : SwipeDirection.Left;                        
+                    }
+                    else
+                    {
+                        // Vertical Swipe
+                        swipeDirection = direction.y > 0 ? SwipeDirection.Up : SwipeDirection.Down;
+                    }                    
+                }
+            }
+
             MoveSnake();
         }
         else if (game.gameState == GameState.NEXTLEVEL)
@@ -254,28 +294,28 @@ public class GameManager : MonoBehaviour
         float s = currentSpeed;
 
         // Change Direction
-        if (Input.GetKey(KeyCode.RightArrow) && horizontal)
+        if ((Input.GetKey(KeyCode.RightArrow) || swipeDirection == SwipeDirection.Right) && horizontal)
         {
             horizontal = false;
             vertical = true;
             vector = Vector3.right;
             //Debug.Log("Right");
         }
-        else if (Input.GetKey(KeyCode.LeftArrow) && horizontal)
+        else if ((Input.GetKey(KeyCode.LeftArrow) || swipeDirection == SwipeDirection.Left) && horizontal)
         {
             horizontal = false;
             vertical = true;
             vector = Vector3.left;
             //Debug.Log("Left");
         }
-        else if (Input.GetKey(KeyCode.UpArrow) && vertical)
+        else if ((Input.GetKey(KeyCode.UpArrow) || swipeDirection == SwipeDirection.Up) && vertical)
         {
             horizontal = true;
             vertical = false;
             vector = Vector3.up;
             //Debug.Log("Up");
         }
-        else if (Input.GetKey(KeyCode.DownArrow) && vertical)
+        else if ((Input.GetKey(KeyCode.DownArrow) || swipeDirection == SwipeDirection.Down) && vertical)
         {
             horizontal = true;
             vertical = false;
@@ -283,6 +323,8 @@ public class GameManager : MonoBehaviour
             //Debug.Log("Down");
         }
 
+        // Reset swipe direction
+        swipeDirection = SwipeDirection.None;
 
         // Move Player Snake Head
         playerSnake.transform.Translate(vector * s * Time.smoothDeltaTime);

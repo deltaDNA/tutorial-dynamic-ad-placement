@@ -1195,6 +1195,7 @@ MonoBehaviour:
   minDist: 10
   speed: 3
   acceleration: 0.25
+  phase: 0
 --- !u!4 &710343634
 Transform:
   m_ObjectHideFlags: 0
