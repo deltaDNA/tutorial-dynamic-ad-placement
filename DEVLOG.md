@@ -76,3 +76,11 @@ TODO - Come back later and add some more detail to mission events (cost, poison,
 - Record AdImpression event 
 - Send impression value as ``adEcpmUsd`` field on ``adImpression`` event
   
+## 1.08 Added IronSource Ads
+- [Check out the IronSource Readme](/IRONSOURCE.md)
+- Added Swipe controls
+- Built to Android, updated build target to 23
+
+## 1.09 
+- Switched configuration to Unity Ads
+- Added GamerSid to Unity Ads options

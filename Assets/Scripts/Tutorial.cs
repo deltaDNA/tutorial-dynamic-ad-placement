@@ -10,7 +10,7 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
 
     // Unit Ads
     [Header("Unity Ads")]
-    public string unityAdsGameId = "3521373";
+    public string unityAdsGameId = "3802209";
     public bool unityAdsTestMode = false;
     public string unityAdsPlacementId = "dynamic_placement";
 
@@ -173,13 +173,17 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
     public void ConfigureUnityAds()
     {
         // Unity Ads Configuration
+        
         Advertisement.AddListener(this);
         Advertisement.Initialize(unityAdsGameId, unityAdsTestMode);
     }
 
     public void UnityShowRewardedAd()
     {
-        Advertisement.Show(unityAdsPlacementId);
+        ShowOptions options = new ShowOptions();
+        options.gamerSid = DDNA.Instance.UserID;
+        
+        Advertisement.Show(unityAdsPlacementId, options);
     }
 
     // Unity Ads Listeners

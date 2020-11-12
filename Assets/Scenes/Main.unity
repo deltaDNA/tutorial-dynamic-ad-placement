@@ -1195,7 +1195,6 @@ MonoBehaviour:
   minDist: 10
   speed: 3
   acceleration: 0.25
-  phase: 0
 --- !u!4 &710343634
 Transform:
   m_ObjectHideFlags: 0
@@ -1824,16 +1823,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameManager: {fileID: 710343633}
-  unityAdsGameId: 3521373
-  unityAdsTestMode: 1
+  unityAdsGameId: 3802209
+  unityAdsTestMode: 0
   unityAdsPlacementId: dynamic_placement
   _rewardedAdUnits:
   - 920b6145fb1546cf8b5cf2ac34638bb7
   isMoPubAdLoaded: 0
   appKey: 85460dcd
   isMoPubAdsEnabled: 0
-  isUnityAdsEnabled: 0
-  isIronSourceAdsEnabled: 1
+  isUnityAdsEnabled: 1
+  isIronSourceAdsEnabled: 0
 --- !u!4 &1276440120
 Transform:
   m_ObjectHideFlags: 0
