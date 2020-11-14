@@ -135,19 +135,29 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         {
             if (System.Convert.ToInt32(gameParameters["adShow"]) == 1)
             {
+                // adProvider can be used to remotely define which of the installed Ad Networks should show an Ad
+                // ANY / UNITY / MOPUB / IRONSOURCE
+                string adProvider = "ANY"; 
+                if (gameParameters.ContainsKey("adProvider"))
+                {
+                    adProvider = gameParameters["adProvider"].ToString();
+                }
+
+                
                 // Rewarded Ad display controlled by Engage "adShow" game parameter
-                if (isUnityAdsEnabled)
+                if (isUnityAdsEnabled && (adProvider == "ANY" || adProvider == "UNITY"))
                 {
                     UnityShowRewardedAd();
                 }
-                else if (isMoPubAdsEnabled)
+                else if (isMoPubAdsEnabled && (adProvider == "ANY" || adProvider == "MOPUB"))
                 {
                     MoPubShowRewardedAd();
                 }
-                else if (isIronSourceAdsEnabled)
+                else if (isIronSourceAdsEnabled && (adProvider == "ANY" || adProvider == "IRONSOURCE"))
                 {
                     IronSourceShowRewardedAd();
                 }
+
 
                 // Rewarded Ad Value controlled by Engage "adRewardValue" game parameter                               
                 if (gameParameters.ContainsKey("adRewardValue"))
@@ -160,6 +170,14 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         {
             gameManager.ReceiveCurrency(System.Convert.ToInt32(gameParameters["realCurrencyAmount"]));
         }
+        
+        if (gameParameters.ContainsKey("debugMode"))
+        {
+            gameManager.debugMode = System.Convert.ToInt32(gameParameters["debugMode"]);
+            gameManager.bttnConsole.gameObject.SetActive(gameManager.debugMode == 1 ? true : false);
+        }
+
+
         // --------------------------------------------------------------------------------------------
 
     }
@@ -184,6 +202,7 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         options.gamerSid = DDNA.Instance.UserID;
         
         Advertisement.Show(unityAdsPlacementId, options);
+        Debug.Log("Showing Unity Ad");
     }
 
     // Unity Ads Listeners
@@ -221,7 +240,6 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
     }
     #endregion
 
-
     #region MoPubAds
     /// <summary>
     /// MoPub SDK Stuff
@@ -251,7 +269,7 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
     {
         if (isMoPubAdLoaded)
         {
-            Debug.Log("MoPubSDK Showing Ad");
+            Debug.Log("Showing MoPub Ad");
             MoPub.ShowRewardedVideo(_rewardedAdUnits[0]);
         }
         else
@@ -322,7 +340,7 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
 
     public void IronSourceShowRewardedAd()
     {
-        Debug.Log("unity-script: ShowRewardedVideo");
+        Debug.Log("Showing IronSource Ad");
         if (IronSource.Agent.isRewardedVideoAvailable())
         {
             IronSource.Agent.showRewardedVideo();

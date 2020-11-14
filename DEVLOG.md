@@ -84,3 +84,5 @@ TODO - Come back later and add some more detail to mission events (cost, poison,
 ## 1.09 
 - Switched configuration to Unity Ads
 - Added GamerSid to Unity Ads options
+- Added ability to remotely control Ad network choice at runtime with **adProvider** game parameter in Engage responses. [ANY / UNITY / MOPUB / IRONSOURCE]
+- Added debug console and the ability to remotely enable it with the **debugMode** game parameter in Engage. Added debugMode parameter to mission events for reporting.

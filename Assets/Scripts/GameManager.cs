@@ -21,6 +21,7 @@ public class GameManager : MonoBehaviour
     public Text txtMessage;
     public Text txtCost;
     public Button bttnStart;
+    public Button bttnConsole;
 
     // Start Button Size and Color
     private Color sourceColor;
@@ -61,6 +62,8 @@ public class GameManager : MonoBehaviour
     private Vector2 touchStart = Vector2.zero;
     private SwipeDirection swipeDirection = SwipeDirection.None ;
 
+    // Debug Mode
+    public int debugMode = 0; 
 
     // Start is called before the first frame update
     void Start()
@@ -86,7 +89,7 @@ public class GameManager : MonoBehaviour
 
         txtCost.text = string.Format("Cost {0} Coins", game.levels[game.currentLevel].cost);
         hud.UpdateHud(game.currencyBalance, game.currentLevel, foodList.Count);
-
+        bttnConsole.gameObject.SetActive(debugMode == 1 ? true : false);
     }
 
     // Update is called once per frame
@@ -139,7 +142,8 @@ public class GameManager : MonoBehaviour
                 .AddParam("missionID", game.currentLevel.ToString())
                 .AddParam("missionName", string.Format("Mission {0}", game.currentLevel))
                 .AddParam("foodTarget", game.levels[game.currentLevel].food)                
-                .AddParam("missionReward",game.levels[game.currentLevel].reward);
+                .AddParam("missionReward",game.levels[game.currentLevel].reward)
+                .AddParam("debugMode", debugMode);
 
             DDNA.Instance.RecordEvent(missionCompleted).Run();
 
@@ -160,7 +164,8 @@ public class GameManager : MonoBehaviour
             GameEvent missionFailed = new GameEvent("missionFailed")
                 .AddParam("missionID", game.currentLevel.ToString())
                 .AddParam("missionName", string.Format("Mission {0}", game.currentLevel))
-                .AddParam("foodRemaining", foodList.Count);                
+                .AddParam("foodRemaining", foodList.Count)
+                .AddParam("debugMode", debugMode);
 
             DDNA.Instance.RecordEvent(missionFailed).Run();
                      
@@ -174,7 +179,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-
+    
     public void ResetGame()
     {
         game.gameState = GameState.INIT;
@@ -243,7 +248,8 @@ public class GameManager : MonoBehaviour
                 .AddParam("missionID", game.currentLevel.ToString())
                 .AddParam("missionName", string.Format("Mission {0}", game.currentLevel))
                 .AddParam("foodTarget", game.levels[game.currentLevel].food)
-                .AddParam("missionCost", game.levels[game.currentLevel].cost);                
+                .AddParam("missionCost", game.levels[game.currentLevel].cost)
+                .AddParam("debugMode", debugMode);
 
             DDNA.Instance.RecordEvent(missionStarted).Run();
 
@@ -378,7 +384,7 @@ public class GameManager : MonoBehaviour
 
     public void EatFood(GameObject f)
     {
-        Debug.Log("Munch");
+       //Debug.Log("Munch");
 
         // Destroy Food Object
         foreach (GameObject o in foodList)
