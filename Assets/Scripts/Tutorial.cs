@@ -198,11 +198,24 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
 
     public void UnityShowRewardedAd()
     {
+        
+        // Send the deltaDNA userID to Unity Ads to
+        // recveive adRevenue event bacm in DDNA
         ShowOptions options = new ShowOptions();
         options.gamerSid = DDNA.Instance.UserID;
+
+        // Send deltaDNA SessionID to Unity Ads to 
+        // attribute adRevenue to correct player session.
+        MetaData metaData = new MetaData("DDNA");
+        metaData.Set("sessionID", DDNA.Instance.SessionID);
+        metaData.Set("collectURL", DDNA.Instance.CollectURL);
+        metaData.Set("environmentKey", DDNA.Instance.EnvironmentKey);
         
+        Advertisement.SetMetaData(metaData);
+
+        // Show Unity Ad
         Advertisement.Show(unityAdsPlacementId, options);
-        Debug.Log("Showing Unity Ad");
+        Debug.Log("Showing Unity Ad version + " + Advertisement.version);
     }
 
     // Unity Ads Listeners
