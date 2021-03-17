@@ -6,7 +6,13 @@
     <package>androidx.media2:media2-player:1.0.1</package>
     <package>androidx.media2:media2-session:1.0.1</package>
     <package>androidx.media2:media2-widget:1.0.1</package>
+    <package>com.android.support:appcompat-v7:28.+</package>
+    <package>com.android.support:recyclerview-v7:28.+</package>
+    <package>com.applovin.mediation:facebook-adapter:[6.3.0.0]</package>
+    <package>com.applovin:applovin-sdk:10.0.1</package>
     <package>com.deltadna.android:deltadna-sdk-notifications:4.12.0</package>
+    <package>com.google.android.exoplayer:exoplayer:2.12.1</package>
+    <package>com.google.android.gms:play-services-ads-identifier:16.0.0</package>
     <package>com.google.android.gms:play-services-ads-identifier:17.0.0</package>
     <package>com.google.android.gms:play-services-basement:17.2.1</package>
     <package>com.google.code.gson:gson:2.8.5</package>
@@ -49,6 +55,7 @@
     <file>Assets/Plugins/Android/androidx.media2.media2-widget-1.0.1.aar</file>
     <file>Assets/Plugins/Android/androidx.palette.palette-1.0.0.aar</file>
     <file>Assets/Plugins/Android/androidx.print.print-1.0.0.aar</file>
+    <file>Assets/Plugins/Android/androidx.recyclerview.recyclerview-1.1.0.aar</file>
     <file>Assets/Plugins/Android/androidx.savedstate.savedstate-1.0.0.aar</file>
     <file>Assets/Plugins/Android/androidx.slidingpanelayout.slidingpanelayout-1.0.0.aar</file>
     <file>Assets/Plugins/Android/androidx.swiperefreshlayout.swiperefreshlayout-1.0.0.aar</file>
@@ -56,10 +63,21 @@
     <file>Assets/Plugins/Android/androidx.vectordrawable.vectordrawable-animated-1.1.0.aar</file>
     <file>Assets/Plugins/Android/androidx.versionedparcelable.versionedparcelable-1.1.0.aar</file>
     <file>Assets/Plugins/Android/androidx.viewpager.viewpager-1.0.0.aar</file>
+    <file>Assets/Plugins/Android/com.applovin.applovin-sdk-10.0.1.aar</file>
+    <file>Assets/Plugins/Android/com.applovin.mediation.facebook-adapter-6.3.0.0.aar</file>
     <file>Assets/Plugins/Android/com.deltadna.android.deltadna-sdk-notifications-4.12.0.aar</file>
+    <file>Assets/Plugins/Android/com.facebook.android.audience-network-sdk-6.3.0.aar</file>
     <file>Assets/Plugins/Android/com.google.android.datatransport.transport-api-2.2.0.aar</file>
     <file>Assets/Plugins/Android/com.google.android.datatransport.transport-backend-cct-2.2.0.aar</file>
     <file>Assets/Plugins/Android/com.google.android.datatransport.transport-runtime-2.2.0.aar</file>
+    <file>Assets/Plugins/Android/com.google.android.exoplayer.exoplayer-2.12.1.aar</file>
+    <file>Assets/Plugins/Android/com.google.android.exoplayer.exoplayer-common-2.12.1.aar</file>
+    <file>Assets/Plugins/Android/com.google.android.exoplayer.exoplayer-core-2.12.1.aar</file>
+    <file>Assets/Plugins/Android/com.google.android.exoplayer.exoplayer-dash-2.12.1.aar</file>
+    <file>Assets/Plugins/Android/com.google.android.exoplayer.exoplayer-extractor-2.12.1.aar</file>
+    <file>Assets/Plugins/Android/com.google.android.exoplayer.exoplayer-hls-2.12.1.aar</file>
+    <file>Assets/Plugins/Android/com.google.android.exoplayer.exoplayer-smoothstreaming-2.12.1.aar</file>
+    <file>Assets/Plugins/Android/com.google.android.exoplayer.exoplayer-ui-2.12.1.aar</file>
     <file>Assets/Plugins/Android/com.google.android.gms.play-services-ads-identifier-17.0.0.aar</file>
     <file>Assets/Plugins/Android/com.google.android.gms.play-services-base-17.0.0.aar</file>
     <file>Assets/Plugins/Android/com.google.android.gms.play-services-basement-17.2.1.aar</file>
@@ -78,7 +96,9 @@
     <file>Assets/Plugins/Android/com.google.firebase.firebase-installations-interop-16.0.0.aar</file>
     <file>Assets/Plugins/Android/com.google.firebase.firebase-measurement-connector-18.0.0.aar</file>
     <file>Assets/Plugins/Android/com.google.firebase.firebase-messaging-20.2.0.aar</file>
-    <file>Assets/Plugins/Android/com.google.guava.listenablefuture-1.0.jar</file>
+    <file>Assets/Plugins/Android/com.google.guava.failureaccess-1.0.1.jar</file>
+    <file>Assets/Plugins/Android/com.google.guava.guava-27.1-android.jar</file>
+    <file>Assets/Plugins/Android/com.google.guava.listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar</file>
     <file>Assets/Plugins/Android/com.ironsource.sdk.mediationsdk-7.0.3.1.aar</file>
     <file>Assets/Plugins/Android/javax.inject.javax.inject-1.jar</file>
     <file>Assets/Plugins/Android/org.jetbrains.annotations-13.0.jar</file>
