@@ -30,7 +30,7 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
 
     [Header("ApplovinMax Ads")]
     public string maxSdkKey = "Li1cCmO-P7mxhdd9Nnqr2ChbmAfGkysfV1qbGLwse-2G1OtyCwCSe3chc2RwZ1PZTeeb4KBFbrnNtrZdbmnS5p";
-    public string maxAdUnitId = "7f69b7f0e705c99d";
+    public string maxAdUnitId = "81c1d58291f2a4dc";
     public int maxRetryAttempts = 3;
     public bool maxRewardReached = false;
 
@@ -50,7 +50,7 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         if (isUnityAdsEnabled) ConfigureUnityAds();
         if (isMoPubAdsEnabled) ConfigureMoPubAds();
         if (isIronSourceAdsEnabled) ConfigureIronSourceAds();
-
+        if (isApplovinMaxAdsEnabled) ConfigureApplovinMaxAds();
 
         // Hook up callback to fire when DDNA SDK has received session config info, including Event Triggered campaigns.
         DDNA.Instance.NotifyOnSessionConfigured(true);
