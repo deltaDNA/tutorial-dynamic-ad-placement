@@ -1,5 +1,26 @@
 ## Versions
 
+## 4.2.1
+    * Update the default User Tracking Usage Description string for EN locale.
+    * Append `android.enableDexingArtifactTransform=false` to gradle.properties for Android builds on Unity 2018.2+ (to fix ExoPlayer build issues).
+    * Add integration manager warning and dialog when AdMob and Google Ad Manager adapters use different underlying SDK versions.
+    * Fix potential NPE when accessing `RegionInfo.CurrentRegion.TwoLetterISORegionName` in Unity Editor mode.
+    * Fix a crash on iOS when banner APIs are called from a background thread.
+    * Update ExoPlayer to 2.13.3 to avoid JCenter dependency.
+## 4.2.0
+    * Add an optional Terms of Service URL field to be shown when prompting the user for consent during the ATT consent flow.
+    * Add Chinese Traditional localization support for User Tracking Usage Description.
+    * Fix link text not readable in Integration Manager when in dark mode.
+## 4.1.2
+    * Add support for embedding the Swift Standard Library (for iOS < 12.2) if a network requires it.
+    * Fix failure to parse doubles when dealing with exponential notation by returning -1.
+    * Fix build when targeting platforms other than Android or iOS.
+## 4.1.1
+    * Add API to retrieve country code, via `MaxSdk.GetSdkConfiguration().CountryCode`.
+## 4.1.0
+    * Add API to retrieve revenue via `MaxSdk.GetAdInfo(adUnitId).Revenue`.
+    * Add API to retrieve SDK configuration via `MaxSdk.GetSdkConfiguration()`.
+    * Persist fullscreen ad stubs through scene changes in Unity Editor mode.
 ## 4.0.1
     * Remove Terms of Service URL from being a consent flow requirement.
     * Update Quality Service Plugin maven repository.

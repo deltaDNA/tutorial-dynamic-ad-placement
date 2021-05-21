@@ -3,6 +3,7 @@ guid: 70408374f350448459ff5f31c7b85d5a
 labels:
 - al_max
 - al_max_export_path-MaxSdk/Resources
+- al_max_export_path-MaxSdk\Resources
 folderAsset: yes
 DefaultImporter:
   externalObjects: {}

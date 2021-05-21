@@ -1,5 +1,7 @@
+using System;
 using UnityEngine;
 using System.Collections.Generic;
+using System.Globalization;
 
 public abstract class MaxSdkBase
 {
@@ -29,7 +31,7 @@ public abstract class MaxSdkBase
         /// </summary>
         DoesNotApply
     }
-    
+
 #if UNITY_EDITOR || UNITY_IPHONE || UNITY_IOS
     /// <summary>
     /// App tracking status values. Primarily used in conjunction with iOS14's AppTrackingTransparency.framework.
@@ -50,19 +52,19 @@ public abstract class MaxSdkBase
         /// The value returned if authorization to access app-related data that can be used for tracking the user or the device is restricted.
         /// </summary>
         Restricted,
-        
+
         /// <summary>
         /// The value returned if the user denies authorization to access app-related data that can be used for tracking the user or the device.
         /// </summary>
         Denied,
-        
+
         /// <summary>
         /// The value returned if the user authorizes access to app-related data that can be used for tracking the user or the device.
         /// </summary>
         Authorized,
     }
 #endif
-    
+
     public enum AdViewPosition
     {
         TopLeft,
@@ -96,19 +98,73 @@ public abstract class MaxSdkBase
         /// </summary>
         public ConsentDialogState ConsentDialogState;
 
+        /// <summary>
+        /// Get the country code for this user.
+        /// </summary>
+        public string CountryCode;
+
 #if UNITY_EDITOR || UNITY_IPHONE || UNITY_IOS
         /// <summary>
         /// App tracking status values. Primarily used in conjunction with iOS14's AppTrackingTransparency.framework.
         /// </summary>
         public AppTrackingStatus AppTrackingStatus;
 #endif
+
+        public static SdkConfiguration Create(IDictionary<string, string> eventProps)
+        {
+            var sdkConfiguration = new SdkConfiguration();
+
+            string countryCode = eventProps.TryGetValue("countryCode", out countryCode) ? countryCode : "";
+            sdkConfiguration.CountryCode = countryCode;
+
+            string consentDialogStateStr = eventProps.TryGetValue("consentDialogState", out consentDialogStateStr) ? consentDialogStateStr : "";
+            if ("1".Equals(consentDialogStateStr))
+            {
+                sdkConfiguration.ConsentDialogState = MaxSdkBase.ConsentDialogState.Applies;
+            }
+            else if ("2".Equals(consentDialogStateStr))
+            {
+                sdkConfiguration.ConsentDialogState = MaxSdkBase.ConsentDialogState.DoesNotApply;
+            }
+            else
+            {
+                sdkConfiguration.ConsentDialogState = MaxSdkBase.ConsentDialogState.Unknown;
+            }
+
+#if UNITY_IPHONE || UNITY_IOS
+            string appTrackingStatusStr = eventProps.TryGetValue("appTrackingStatus", out appTrackingStatusStr) ? appTrackingStatusStr : "-1";
+            if ("-1".Equals(appTrackingStatusStr))
+            {
+                sdkConfiguration.AppTrackingStatus = MaxSdkBase.AppTrackingStatus.Unavailable;
+            }
+            else if ("0".Equals(appTrackingStatusStr))
+            {
+                sdkConfiguration.AppTrackingStatus = MaxSdkBase.AppTrackingStatus.NotDetermined;
+            }
+            else if ("1".Equals(appTrackingStatusStr))
+            {
+                sdkConfiguration.AppTrackingStatus = MaxSdkBase.AppTrackingStatus.Restricted;
+            }
+            else if ("2".Equals(appTrackingStatusStr))
+            {
+                sdkConfiguration.AppTrackingStatus = MaxSdkBase.AppTrackingStatus.Denied;
+            }
+            else // "3" is authorized
+            {
+                sdkConfiguration.AppTrackingStatus = MaxSdkBase.AppTrackingStatus.Authorized;
+            }
+
+#endif
+
+            return sdkConfiguration;
+        }
     }
 
     public struct Reward
     {
         public string Label;
         public int Amount;
-        
+
         public override string ToString()
         {
             return "Reward: " + Amount + " " + Label;
@@ -126,34 +182,53 @@ public abstract class MaxSdkBase
         public string NetworkName { get; private set; }
         public string Placement { get; private set; }
         public string CreativeIdentifier { get; private set; }
+        public double Revenue { get; private set; }
 
         public AdInfo(string adInfoString)
         {
-            string adUnitIdentifier = "";
-            string networkName = "";
-            string creativeIdentifier = "";
-            string placement = "";
+            string adUnitIdentifier;
+            string networkName;
+            string creativeIdentifier;
+            string placement;
+            string revenue;
 
             // NOTE: Unity Editor creates empty string
-            IDictionary<string, string> adInfoObject = MaxSdkUtils.PropsStringToDict(adInfoString);
-            adInfoObject.TryGetValue("adUnitId", out adUnitIdentifier);
-            adInfoObject.TryGetValue("networkName", out networkName);
-            adInfoObject.TryGetValue("creativeId", out creativeIdentifier);
-            adInfoObject.TryGetValue("placement", out placement);
+            var adInfoObject = MaxSdkUtils.PropsStringToDict(adInfoString);
+            AdUnitIdentifier = adInfoObject.TryGetValue("adUnitId", out adUnitIdentifier) ? adUnitIdentifier : "";
+            NetworkName = adInfoObject.TryGetValue("networkName", out networkName) ? networkName : "";
+            CreativeIdentifier = adInfoObject.TryGetValue("creativeId", out creativeIdentifier) ? creativeIdentifier : "";
+            Placement = adInfoObject.TryGetValue("placement", out placement) ? placement : "";
 
-            AdUnitIdentifier = adUnitIdentifier;
-            NetworkName = networkName;
-            CreativeIdentifier = creativeIdentifier;
-            Placement = placement;
+            if (adInfoObject.TryGetValue("revenue", out revenue))
+            {
+                try
+                {
+                    // InvariantCulture guarantees the decimal is used for the separator even in regions that use commas as the separator
+                    Revenue = double.Parse(revenue, NumberStyles.Any, CultureInfo.InvariantCulture);
+                }
+                catch (Exception exception)
+                {
+                    MaxSdkLogger.E("Failed to parse double (" + revenue + ") with exception: " + exception);
+                    Revenue = -1;
+                }
+            }
+            else
+            {
+                Revenue = -1;
+            }
         }
 
         public override string ToString()
         {
-            return "[AdInfo adUnitIdentifier: " + AdUnitIdentifier + ", networkName: " + NetworkName + ", creativeIdentifier: " + CreativeIdentifier + ", placement: " + Placement + "]";
+            return "[AdInfo adUnitIdentifier: " + AdUnitIdentifier +
+                   ", networkName: " + NetworkName +
+                   ", creativeIdentifier: " + CreativeIdentifier +
+                   ", placement: " + Placement +
+                   ", revenue: " + Revenue + "]";
         }
     }
 
-    public class MediatedNetworkInfo 
+    public class MediatedNetworkInfo
     {
         public string Name { get; private set; }
         public string AdapterClassName { get; private set; }
@@ -162,27 +237,25 @@ public abstract class MaxSdkBase
 
         public MediatedNetworkInfo(string networkInfoString)
         {
-            var name = "";
-            var adapterClassName = "";
-            var adapterVersion = "";
-            var sdkVersion = "";
+            string name;
+            string adapterClassName;
+            string adapterVersion;
+            string sdkVersion;
 
             // NOTE: Unity Editor creates empty string
             var mediatedNetworkObject = MaxSdkUtils.PropsStringToDict(networkInfoString);
-            mediatedNetworkObject.TryGetValue("name", out name);
-            mediatedNetworkObject.TryGetValue("adapterClassName", out adapterClassName);
-            mediatedNetworkObject.TryGetValue("adapterVersion", out adapterVersion);
-            mediatedNetworkObject.TryGetValue("sdkVersion", out sdkVersion);
-
-            Name = name;
-            AdapterClassName = adapterClassName;
-            AdapterVersion = adapterVersion;
-            SdkVersion = sdkVersion;
+            Name = mediatedNetworkObject.TryGetValue("name", out name) ? name : "";
+            AdapterClassName = mediatedNetworkObject.TryGetValue("adapterClassName", out adapterClassName) ? adapterClassName : "";
+            AdapterVersion = mediatedNetworkObject.TryGetValue("adapterVersion", out adapterVersion) ? adapterVersion : "";
+            SdkVersion = mediatedNetworkObject.TryGetValue("sdkVersion", out sdkVersion) ? sdkVersion : "";
         }
 
         public override string ToString()
         {
-            return "[MediatedNetworkInfo name: " + Name + ", adapterClassName: " + AdapterClassName + ", adapterVersion: " + AdapterVersion + ", sdkVersion: " + SdkVersion + "]";
+            return "[MediatedNetworkInfo name: " + Name +
+                   ", adapterClassName: " + AdapterClassName +
+                   ", adapterVersion: " + AdapterVersion +
+                   ", sdkVersion: " + SdkVersion + "]";
         }
     }
 
@@ -212,7 +285,7 @@ public abstract class MaxSdkBase
     /// <returns>Serialized Unity meta data.</returns>
     protected static string GenerateMetaData()
     {
-        var metaData = new Dictionary<string, string>();
+        var metaData = new Dictionary<string, string>(2);
         metaData.Add("UnityVersion", Application.unityVersion);
 
         var graphicsMemorySize = SystemInfo.graphicsMemorySize;
@@ -233,8 +306,8 @@ public abstract class MaxSdkBase
         float originY;
         float width;
         float height;
-
         string output;
+
         rectDict.TryGetValue("origin_x", out output);
         float.TryParse(output, out originX);
 

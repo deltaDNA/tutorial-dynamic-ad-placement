@@ -5,7 +5,7 @@
 
 #import "MAUnityAdManager.h"
 
-#define VERSION @"4.0.1"
+#define VERSION @"4.2.1"
 
 #define KEY_WINDOW [UIApplication sharedApplication].keyWindow
 #define DEVICE_SPECIFIC_ADVIEW_AD_FORMAT ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) ? MAAdFormat.leader : MAAdFormat.banner
@@ -18,6 +18,21 @@ extern "C" {
     // life cycle management
     void UnityPause(int pause);
     void UnitySendMessage(const char* obj, const char* method, const char* msg);
+    
+    void max_unity_dispatch_on_main_thread(dispatch_block_t block)
+    {
+        if ( block )
+        {
+            if ( [NSThread isMainThread] )
+            {
+                block();
+            }
+            else
+            {
+                dispatch_async(dispatch_get_main_queue(), block);
+            }
+        }
+    }
 #ifdef __cplusplus
 }
 #endif
@@ -108,17 +123,19 @@ static NSString *ALSerializeKeyValuePairSeparator;
         self.adViewExtraParametersToSetAfterCreate = [NSMutableDictionary dictionaryWithCapacity: 1];
         self.adUnitIdentifiersToShowAfterCreate = [NSMutableArray arrayWithCapacity: 2];
         self.adaptiveBannerAdUnitIdentifiers = [NSMutableSet setWithCapacity: 1];
-        self.safeAreaBackground = [[UIView alloc] init];
-        self.safeAreaBackground.hidden = YES;
-        self.safeAreaBackground.backgroundColor = UIColor.clearColor;
-        self.safeAreaBackground.translatesAutoresizingMaskIntoConstraints = NO;
-        self.safeAreaBackground.userInteractionEnabled = NO;
-        
         self.adInfoDict = [NSMutableDictionary dictionary];
         self.adInfoDictLock = [[NSObject alloc] init];
         
-        UIViewController *rootViewController = [MAUnityAdManager unityViewController];
-        [rootViewController.view addSubview: self.safeAreaBackground];
+        max_unity_dispatch_on_main_thread(^{
+            self.safeAreaBackground = [[UIView alloc] init];
+            self.safeAreaBackground.hidden = YES;
+            self.safeAreaBackground.backgroundColor = UIColor.clearColor;
+            self.safeAreaBackground.translatesAutoresizingMaskIntoConstraints = NO;
+            self.safeAreaBackground.userInteractionEnabled = NO;
+            
+            UIViewController *rootViewController = [MAUnityAdManager unityViewController];
+            [rootViewController.view addSubview: self.safeAreaBackground];
+        });
         
         // Enable orientation change listener, so that the position can be updated for vertical banners.
         [[NSNotificationCenter defaultCenter] addObserverForName: UIDeviceOrientationDidChangeNotification
@@ -163,6 +180,7 @@ static NSString *ALSerializeKeyValuePairSeparator;
         NSString *appTrackingStatus = @(configuration.appTrackingTransparencyStatus).stringValue; // Deliberately name it `appTrackingStatus` to be a bit more generic (in case Android introduces a similar concept)
         [MAUnityAdManager forwardUnityEventWithArgs: @{@"name" : @"OnSdkInitializedEvent",
                                                        @"consentDialogState" : consentDialogStateStr,
+                                                       @"countryCode" : configuration.countryCode,
                                                        @"appTrackingStatus" : appTrackingStatus}];
     }];
     
@@ -428,8 +446,9 @@ static NSString *ALSerializeKeyValuePairSeparator;
     
     return [MAUnityAdManager propsStrFromDictionary: @{@"adUnitId" : adUnitIdentifier,
                                                        @"networkName" : ad.networkName,
-                                                       @"creativeId" : [ad.creativeIdentifier al_isValidString] ? ad.creativeIdentifier : @"",
-                                                       @"placement" : [ad.placement al_isValidString] ? ad.placement : @""}];
+                                                       @"creativeId" : ad.creativeIdentifier ?: @"",
+                                                       @"placement" : ad.placement ?: @"",
+                                                       @"revenue" : @(ad.revenue).stringValue}];
 }
 
 #pragma mark - Ad Value
@@ -759,119 +778,130 @@ static NSString *ALSerializeKeyValuePairSeparator;
 
 - (void)createAdViewWithAdUnitIdentifier:(NSString *)adUnitIdentifier adFormat:(MAAdFormat *)adFormat atPosition:(NSString *)adViewPosition withOffset:(CGPoint)offset
 {
-    [self log: @"Creating %@ with ad unit identifier \"%@\" and position: \"%@\"", adFormat, adUnitIdentifier, adViewPosition];
-    
-    // Retrieve ad view from the map
-    MAAdView *adView = [self retrieveAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat atPosition: adViewPosition withOffset: offset];
-    adView.hidden = YES;
-    self.safeAreaBackground.hidden = YES;
-    
-    // Position ad view immediately so if publisher sets color before ad loads, it will not be the size of the screen
-    self.adViewAdFormats[adUnitIdentifier] = adFormat;
-    [self positionAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
-    
-    // Handle initial extra parameters if publisher sets it before creating ad view
-    if ( self.adViewExtraParametersToSetAfterCreate[adUnitIdentifier] )
-    {
-        NSDictionary<NSString *, NSString *> *extraParameters = self.adViewExtraParametersToSetAfterCreate[adUnitIdentifier];
-        for ( NSString *key in extraParameters )
+    max_unity_dispatch_on_main_thread(^{
+        [self log: @"Creating %@ with ad unit identifier \"%@\" and position: \"%@\"", adFormat, adUnitIdentifier, adViewPosition];
+        
+        // Retrieve ad view from the map
+        MAAdView *adView = [self retrieveAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat atPosition: adViewPosition withOffset: offset];
+        adView.hidden = YES;
+        self.safeAreaBackground.hidden = YES;
+        
+        // Position ad view immediately so if publisher sets color before ad loads, it will not be the size of the screen
+        self.adViewAdFormats[adUnitIdentifier] = adFormat;
+        [self positionAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
+        
+        // Handle initial extra parameters if publisher sets it before creating ad view
+        if ( self.adViewExtraParametersToSetAfterCreate[adUnitIdentifier] )
         {
-            [adView setExtraParameterForKey: key value: extraParameters[key]];
+            NSDictionary<NSString *, NSString *> *extraParameters = self.adViewExtraParametersToSetAfterCreate[adUnitIdentifier];
+            for ( NSString *key in extraParameters )
+            {
+                [adView setExtraParameterForKey: key value: extraParameters[key]];
+                
+                [self handleExtraParameterChangesIfNeededForAdUnitIdentifier: adUnitIdentifier
+                                                                    adFormat: adFormat
+                                                                         key: key
+                                                                       value: extraParameters[key]];
+            }
             
-            [self handleExtraParameterChangesIfNeededForAdUnitIdentifier: adUnitIdentifier
-                                                                adFormat: adFormat
-                                                                     key: key
-                                                                   value: extraParameters[key]];
+            [self.adViewExtraParametersToSetAfterCreate removeObjectForKey: adUnitIdentifier];
         }
         
-        [self.adViewExtraParametersToSetAfterCreate removeObjectForKey: adUnitIdentifier];
-    }
-    
-    [adView loadAd];
-    
-    // The publisher may have requested to show the banner before it was created. Now that the banner is created, show it.
-    if ( [self.adUnitIdentifiersToShowAfterCreate containsObject: adUnitIdentifier] )
-    {
-        [self showAdViewWithAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
-        [self.adUnitIdentifiersToShowAfterCreate removeObject: adUnitIdentifier];
-    }
+        [adView loadAd];
+        
+        // The publisher may have requested to show the banner before it was created. Now that the banner is created, show it.
+        if ( [self.adUnitIdentifiersToShowAfterCreate containsObject: adUnitIdentifier] )
+        {
+            [self showAdViewWithAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
+            [self.adUnitIdentifiersToShowAfterCreate removeObject: adUnitIdentifier];
+        }
+    });
 }
 
 - (void)setAdViewBackgroundColorForAdUnitIdentifier:(NSString *)adUnitIdentifier adFormat:(MAAdFormat *)adFormat hexColorCode:(NSString *)hexColorCode
 {
-    [self log: @"Setting %@ with ad unit identifier \"%@\" to color: \"%@\"", adFormat, adUnitIdentifier, hexColorCode];
-    
-    // In some cases, black color may get redrawn on each frame update, resulting in an undesired flicker
-    if ( [hexColorCode containsString: @"FF000000"] ) hexColorCode = @"FF000001";
-    
-    UIColor *convertedColor = [UIColor al_colorWithHexString: hexColorCode];
-    
-    MAAdView *view = [self retrieveAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
-    self.publisherBannerBackgroundColor = convertedColor;
-    self.safeAreaBackground.backgroundColor = view.backgroundColor = convertedColor;
-    
-    // Position adView to ensure logic that depends on background color is properly run
-    [self positionAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
+    max_unity_dispatch_on_main_thread(^{
+        [self log: @"Setting %@ with ad unit identifier \"%@\" to color: \"%@\"", adFormat, adUnitIdentifier, hexColorCode];
+        
+        // In some cases, black color may get redrawn on each frame update, resulting in an undesired flicker
+        NSString *hexColorCodeToUse = [hexColorCode containsString: @"FF000000"] ? @"FF000001" : hexColorCode;
+        UIColor *convertedColor = [UIColor al_colorWithHexString: hexColorCodeToUse];
+        
+        MAAdView *view = [self retrieveAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
+        self.publisherBannerBackgroundColor = convertedColor;
+        self.safeAreaBackground.backgroundColor = view.backgroundColor = convertedColor;
+        
+        // Position adView to ensure logic that depends on background color is properly run
+        [self positionAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
+    });
 }
 
 - (void)setAdViewPlacement:(nullable NSString *)placement forAdUnitIdentifier:(NSString *)adUnitIdentifier adFormat:(MAAdFormat *)adFormat
 {
-    [self log: @"Setting placement \"%@\" for \"%@\" with ad unit identifier \"%@\"", placement, adFormat, adUnitIdentifier];
-    
-    MAAdView *adView = [self retrieveAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
-    adView.placement = placement;
+    max_unity_dispatch_on_main_thread(^{
+        [self log: @"Setting placement \"%@\" for \"%@\" with ad unit identifier \"%@\"", placement, adFormat, adUnitIdentifier];
+        
+        MAAdView *adView = [self retrieveAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
+        adView.placement = placement;
+    });
 }
 
 - (void)setAdViewWidth:(CGFloat)width forAdUnitIdentifier:(NSString *)adUnitIdentifier adFormat:(MAAdFormat *)adFormat
 {
-    [self log: @"Setting width %f for \"%@\" with ad unit identifier \"%@\"", width, adFormat, adUnitIdentifier];
-    
-    CGFloat minWidth = adFormat.size.width;
-    if ( width < minWidth )
-    {
-        [self log: @"The provided with: %f is smaller than the minimum required width: %f for ad format: %@. Please set the width higher than the minimum required.", width, minWidth, adFormat];
-    }
-    
-    self.adViewWidths[adUnitIdentifier] = @(width);
-    [self positionAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
+    max_unity_dispatch_on_main_thread(^{
+        [self log: @"Setting width %f for \"%@\" with ad unit identifier \"%@\"", width, adFormat, adUnitIdentifier];
+        
+        CGFloat minWidth = adFormat.size.width;
+        if ( width < minWidth )
+        {
+            [self log: @"The provided with: %f is smaller than the minimum required width: %f for ad format: %@. Please set the width higher than the minimum required.", width, minWidth, adFormat];
+        }
+        
+        self.adViewWidths[adUnitIdentifier] = @(width);
+        [self positionAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
+    });
 }
 
 - (void)updateAdViewPosition:(NSString *)adViewPosition withOffset:(CGPoint)offset forAdUnitIdentifier:(NSString *)adUnitIdentifier adFormat:(MAAdFormat *)adFormat
 {
-    self.adViewPositions[adUnitIdentifier] = adViewPosition;
-    self.adViewOffsets[adUnitIdentifier] = [NSValue valueWithCGPoint: offset];
-    [self positionAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
+    max_unity_dispatch_on_main_thread(^{
+        self.adViewPositions[adUnitIdentifier] = adViewPosition;
+        self.adViewOffsets[adUnitIdentifier] = [NSValue valueWithCGPoint: offset];
+        [self positionAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
+    });
 }
 
 - (void)setAdViewExtraParameterForAdUnitIdentifier:(NSString *)adUnitIdentifier adFormat:(MAAdFormat *)adFormat key:(NSString *)key value:(nullable NSString *)value
 {
-    [self log: @"Setting %@ extra with key: \"%@\" value: \"%@\"", adFormat, key, value];
-    
-    MAAdView *adView = [self retrieveAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
-    if ( adView )
-    {
-        [adView setExtraParameterForKey: key value: value];
-    }
-    else
-    {
-        [self log: @"%@ does not exist for ad unit identifier %@. Saving extra parameter to be set when it is created.", adFormat, adUnitIdentifier];
+    max_unity_dispatch_on_main_thread(^{
+        [self log: @"Setting %@ extra with key: \"%@\" value: \"%@\"", adFormat, key, value];
         
-        // The adView has not yet been created. Store the extra parameters, so that they can be added once the banner has been created.
-        NSMutableDictionary<NSString *, NSString *> *extraParameters = self.adViewExtraParametersToSetAfterCreate[adUnitIdentifier];
-        if ( !extraParameters )
+        MAAdView *adView = [self retrieveAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
+        if ( adView )
         {
-            extraParameters = [NSMutableDictionary dictionaryWithCapacity: 1];
-            self.adViewExtraParametersToSetAfterCreate[adUnitIdentifier] = extraParameters;
+            [adView setExtraParameterForKey: key value: value];
+        }
+        else
+        {
+            [self log: @"%@ does not exist for ad unit identifier %@. Saving extra parameter to be set when it is created.", adFormat, adUnitIdentifier];
+            
+            // The adView has not yet been created. Store the extra parameters, so that they can be added once the banner has been created.
+            NSMutableDictionary<NSString *, NSString *> *extraParameters = self.adViewExtraParametersToSetAfterCreate[adUnitIdentifier];
+            if ( !extraParameters )
+            {
+                extraParameters = [NSMutableDictionary dictionaryWithCapacity: 1];
+                self.adViewExtraParametersToSetAfterCreate[adUnitIdentifier] = extraParameters;
+            }
+            
+            extraParameters[key] = value;
         }
         
-        extraParameters[key] = value;
-    }
-    
-    // Certain extra parameters need to be handled immediately
-    [self handleExtraParameterChangesIfNeededForAdUnitIdentifier: adUnitIdentifier
-                                                        adFormat: adFormat
-                                                             key: key
-                                                           value: value];
+        // Certain extra parameters need to be handled immediately
+        [self handleExtraParameterChangesIfNeededForAdUnitIdentifier: adUnitIdentifier
+                                                            adFormat: adFormat
+                                                                 key: key
+                                                               value: value];
+    });
 }
 
 - (void)handleExtraParameterChangesIfNeededForAdUnitIdentifier:(NSString *)adUnitIdentifier adFormat:(MAAdFormat *)adFormat key:(NSString *)key value:(nullable NSString *)value
@@ -903,46 +933,50 @@ static NSString *ALSerializeKeyValuePairSeparator;
 
 - (void)showAdViewWithAdUnitIdentifier:(NSString *)adUnitIdentifier adFormat:(MAAdFormat *)adFormat
 {
-    [self log: @"Showing %@ with ad unit identifier \"%@\"", adFormat, adUnitIdentifier];
-    
-    MAAdView *view = [self retrieveAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
-    if ( !view )
-    {
-        [self log: @"%@ does not exist for ad unit identifier %@.", adFormat, adUnitIdentifier];
+    max_unity_dispatch_on_main_thread(^{
+        [self log: @"Showing %@ with ad unit identifier \"%@\"", adFormat, adUnitIdentifier];
         
-        // The adView has not yet been created. Store the ad unit ID, so that it can be displayed once the banner has been created.
-        [self.adUnitIdentifiersToShowAfterCreate addObject: adUnitIdentifier];
-    }
-    else
-    {
-        // Check edge case where ad may be detatched from view controller
-        if ( !view.window.rootViewController )
+        MAAdView *view = [self retrieveAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
+        if ( !view )
         {
-            [self log: @"%@ missing view controller - re-attaching to %@...", adFormat, [MAUnityAdManager unityViewController]];
+            [self log: @"%@ does not exist for ad unit identifier %@.", adFormat, adUnitIdentifier];
             
-            UIViewController *rootViewController = [MAUnityAdManager unityViewController];
-            [rootViewController.view addSubview: view];
-            
-            [self positionAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
+            // The adView has not yet been created. Store the ad unit ID, so that it can be displayed once the banner has been created.
+            [self.adUnitIdentifiersToShowAfterCreate addObject: adUnitIdentifier];
         }
-    }
-    
-    self.safeAreaBackground.hidden = NO;
-    view.hidden = NO;
-    
-    [view startAutoRefresh];
+        else
+        {
+            // Check edge case where ad may be detatched from view controller
+            if ( !view.window.rootViewController )
+            {
+                [self log: @"%@ missing view controller - re-attaching to %@...", adFormat, [MAUnityAdManager unityViewController]];
+                
+                UIViewController *rootViewController = [MAUnityAdManager unityViewController];
+                [rootViewController.view addSubview: view];
+                
+                [self positionAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
+            }
+        }
+        
+        self.safeAreaBackground.hidden = NO;
+        view.hidden = NO;
+        
+        [view startAutoRefresh];
+    });
 }
 
 - (void)hideAdViewWithAdUnitIdentifier:(NSString *)adUnitIdentifier adFormat:(MAAdFormat *)adFormat
 {
-    [self log: @"Hiding %@ with ad unit identifier \"%@\"", adFormat, adUnitIdentifier];
-    [self.adUnitIdentifiersToShowAfterCreate removeObject: adUnitIdentifier];
-    
-    MAAdView *view = [self retrieveAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
-    view.hidden = YES;
-    self.safeAreaBackground.hidden = YES;
-    
-    [view stopAutoRefresh];
+    max_unity_dispatch_on_main_thread(^{
+        [self log: @"Hiding %@ with ad unit identifier \"%@\"", adFormat, adUnitIdentifier];
+        [self.adUnitIdentifiersToShowAfterCreate removeObject: adUnitIdentifier];
+        
+        MAAdView *view = [self retrieveAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
+        view.hidden = YES;
+        self.safeAreaBackground.hidden = YES;
+        
+        [view stopAutoRefresh];
+    });
 }
 
 - (NSString *)adViewLayoutForAdUnitIdentifier:(NSString *)adUnitIdentifier adFormat:(MAAdFormat *)adFormat
@@ -966,22 +1000,24 @@ static NSString *ALSerializeKeyValuePairSeparator;
 
 - (void)destroyAdViewWithAdUnitIdentifier:(NSString *)adUnitIdentifier adFormat:(MAAdFormat *)adFormat
 {
-    [self log: @"Destroying %@ with ad unit identifier \"%@\"", adFormat, adUnitIdentifier];
-    
-    MAAdView *view = [self retrieveAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
-    view.delegate = nil;
-    
-    [view removeFromSuperview];
-    
-    [self.adViews removeObjectForKey: adUnitIdentifier];
-    [self.adViewAdFormats removeObjectForKey: adUnitIdentifier];
-    [self.adViewPositions removeObjectForKey: adUnitIdentifier];
-    [self.adViewOffsets removeObjectForKey: adUnitIdentifier];
-    [self.adViewWidths removeObjectForKey: adUnitIdentifier];
-    [self.adViewHeights removeObjectForKey: adUnitIdentifier];
-    [self.adViewRotations removeObjectForKey: adUnitIdentifier];
-    [self.verticalAdViewFormats removeObjectForKey: adUnitIdentifier];
-    [self.adaptiveBannerAdUnitIdentifiers removeObject: adUnitIdentifier];
+    max_unity_dispatch_on_main_thread(^{
+        [self log: @"Destroying %@ with ad unit identifier \"%@\"", adFormat, adUnitIdentifier];
+        
+        MAAdView *view = [self retrieveAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
+        view.delegate = nil;
+        
+        [view removeFromSuperview];
+        
+        [self.adViews removeObjectForKey: adUnitIdentifier];
+        [self.adViewAdFormats removeObjectForKey: adUnitIdentifier];
+        [self.adViewPositions removeObjectForKey: adUnitIdentifier];
+        [self.adViewOffsets removeObjectForKey: adUnitIdentifier];
+        [self.adViewWidths removeObjectForKey: adUnitIdentifier];
+        [self.adViewHeights removeObjectForKey: adUnitIdentifier];
+        [self.adViewRotations removeObjectForKey: adUnitIdentifier];
+        [self.verticalAdViewFormats removeObjectForKey: adUnitIdentifier];
+        [self.adaptiveBannerAdUnitIdentifiers removeObject: adUnitIdentifier];
+    });
 }
 
 - (void)logInvalidAdFormat:(MAAdFormat *)adFormat
@@ -1075,309 +1111,311 @@ static NSString *ALSerializeKeyValuePairSeparator;
 
 - (void)positionAdViewForAdUnitIdentifier:(NSString *)adUnitIdentifier adFormat:(MAAdFormat *)adFormat
 {
-    MAAdView *adView = [self retrieveAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
-    NSString *adViewPosition = self.adViewPositions[adUnitIdentifier];
-    NSValue *adViewPositionValue = self.adViewOffsets[adUnitIdentifier];
-    CGPoint adViewOffset = [adViewPositionValue CGPointValue];
-    BOOL isAdaptiveBannerEnabled = [self.adaptiveBannerAdUnitIdentifiers containsObject: adUnitIdentifier];
-    BOOL isWidthPtsOverridden = self.adViewWidths[adUnitIdentifier] != nil;
-    BOOL isHeightPtsOverridden = self.adViewHeights[adUnitIdentifier] != nil;
-    BOOL isRotationOverridden = self.adViewRotations[adUnitIdentifier] != nil;
-    
-    UIView *superview = adView.superview;
-    if ( !superview ) return;
-    
-    // Deactivate any previous constraints and reset rotation so that the banner can be positioned again.
-    NSArray<NSLayoutConstraint *> *activeConstraints = self.adViewConstraints[adUnitIdentifier];
-    [NSLayoutConstraint deactivateConstraints: activeConstraints];
-    adView.transform = CGAffineTransformIdentity;
-    [self.verticalAdViewFormats removeObjectForKey: adUnitIdentifier];
-    
-    // Ensure superview contains the safe area background.
-    if ( ![superview.subviews containsObject: self.safeAreaBackground] )
-    {
-        [self.safeAreaBackground removeFromSuperview];
-        [superview insertSubview: self.safeAreaBackground belowSubview: adView];
-    }
-    
-    // Deactivate any previous constraints and reset visibility state so that the safe area background can be positioned again.
-    [NSLayoutConstraint deactivateConstraints: self.safeAreaBackground.constraints];
-    self.safeAreaBackground.hidden = adView.hidden;
-    
-    //
-    // Determine ad width
-    //
-    CGFloat adViewWidth;
-    
-    // Check if publisher has overridden width as points
-    if ( isWidthPtsOverridden )
-    {
-        adViewWidth = self.adViewWidths[adUnitIdentifier].floatValue;
-    }
-    // Top center / bottom center stretches full screen
-    else if ( [adViewPosition isEqual: @"top_center"] || [adViewPosition isEqual: @"bottom_center"] )
-    {
-        adViewWidth = CGRectGetWidth(KEY_WINDOW.bounds);
-    }
-    // Else use standard widths of 320, 728, or 300
-    else
-    {
-        adViewWidth = adFormat.size.width;
-    }
-    
-    //
-    // Determine ad height
-    //
-    CGFloat adViewHeight;
-    
-    if ( isHeightPtsOverridden )
-    {
-        adViewHeight = self.adViewHeights[adUnitIdentifier].floatValue;
-    }
-    else if ( isAdaptiveBannerEnabled )
-    {
-        adViewHeight = [adFormat adaptiveSizeForWidth: adViewWidth].height;
-    }
-    else
-    {
-        adViewHeight = adFormat.size.height;
-    }
-
-    CGSize adViewSize = CGSizeMake(adViewWidth, adViewHeight);
-    
-    // All positions have constant height
-    NSMutableArray<NSLayoutConstraint *> *constraints = [NSMutableArray arrayWithObject: [adView.heightAnchor constraintEqualToConstant: adViewSize.height]];
-    
-    UILayoutGuide *layoutGuide;
-    if ( @available(iOS 11.0, *) )
-    {
-        layoutGuide = superview.safeAreaLayoutGuide;
-    }
-    else
-    {
-        layoutGuide = superview.layoutMarginsGuide;
-    }
-    
-    if ( [adViewPosition isEqual: @"top_center"] || [adViewPosition isEqual: @"bottom_center"] )
-    {
-        // Non AdMob banners will still be of 50/90 points tall. Set the auto sizing mask such that the inner ad view is pinned to the bottom or top according to the ad view position.
-        if ( isAdaptiveBannerEnabled )
+    max_unity_dispatch_on_main_thread(^{
+        MAAdView *adView = [self retrieveAdViewForAdUnitIdentifier: adUnitIdentifier adFormat: adFormat];
+        NSString *adViewPosition = self.adViewPositions[adUnitIdentifier];
+        NSValue *adViewPositionValue = self.adViewOffsets[adUnitIdentifier];
+        CGPoint adViewOffset = [adViewPositionValue CGPointValue];
+        BOOL isAdaptiveBannerEnabled = [self.adaptiveBannerAdUnitIdentifiers containsObject: adUnitIdentifier];
+        BOOL isWidthPtsOverridden = self.adViewWidths[adUnitIdentifier] != nil;
+        BOOL isHeightPtsOverridden = self.adViewHeights[adUnitIdentifier] != nil;
+        BOOL isRotationOverridden = self.adViewRotations[adUnitIdentifier] != nil;
+        
+        UIView *superview = adView.superview;
+        if ( !superview ) return;
+        
+        // Deactivate any previous constraints and reset rotation so that the banner can be positioned again.
+        NSArray<NSLayoutConstraint *> *activeConstraints = self.adViewConstraints[adUnitIdentifier];
+        [NSLayoutConstraint deactivateConstraints: activeConstraints];
+        adView.transform = CGAffineTransformIdentity;
+        [self.verticalAdViewFormats removeObjectForKey: adUnitIdentifier];
+        
+        // Ensure superview contains the safe area background.
+        if ( ![superview.subviews containsObject: self.safeAreaBackground] )
         {
-            adView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
-            
-            if ( [@"top_center" isEqual: adViewPosition] )
-            {
-                adView.autoresizingMask |= UIViewAutoresizingFlexibleBottomMargin;
-            }
-            else // bottom_center
-            {
-                adView.autoresizingMask |= UIViewAutoresizingFlexibleTopMargin;
-            }
+            [self.safeAreaBackground removeFromSuperview];
+            [superview insertSubview: self.safeAreaBackground belowSubview: adView];
         }
         
-        // If publisher actually provided a banner background color
-        if ( self.publisherBannerBackgroundColor && adFormat != MAAdFormat.mrec )
+        // Deactivate any previous constraints and reset visibility state so that the safe area background can be positioned again.
+        [NSLayoutConstraint deactivateConstraints: self.safeAreaBackground.constraints];
+        self.safeAreaBackground.hidden = adView.hidden;
+        
+        //
+        // Determine ad width
+        //
+        CGFloat adViewWidth;
+        
+        // Check if publisher has overridden width as points
+        if ( isWidthPtsOverridden )
         {
-            if ( isWidthPtsOverridden )
-            {
-                [constraints addObjectsFromArray: @[[adView.widthAnchor constraintEqualToConstant: adViewWidth],
-                                                    [adView.centerXAnchor constraintEqualToAnchor: layoutGuide.centerXAnchor],
-                                                    [self.safeAreaBackground.widthAnchor constraintEqualToConstant: adViewWidth],
-                                                    [self.safeAreaBackground.centerXAnchor constraintEqualToAnchor: layoutGuide.centerXAnchor]]];
-                
-                if ( [adViewPosition isEqual: @"top_center"] )
-                {
-                    [constraints addObjectsFromArray: @[[adView.topAnchor constraintEqualToAnchor: layoutGuide.topAnchor],
-                                                        [self.safeAreaBackground.topAnchor constraintEqualToAnchor: superview.topAnchor],
-                                                        [self.safeAreaBackground.bottomAnchor constraintEqualToAnchor: adView.topAnchor]]];
-                }
-                else // bottom_center
-                {
-                    [constraints addObjectsFromArray: @[[adView.bottomAnchor constraintEqualToAnchor: layoutGuide.bottomAnchor],
-                                                        [self.safeAreaBackground.topAnchor constraintEqualToAnchor: adView.bottomAnchor],
-                                                        [self.safeAreaBackground.bottomAnchor constraintEqualToAnchor: superview.bottomAnchor]]];
-                }
-            }
-            else
-            {
-                [constraints addObjectsFromArray: @[[adView.leftAnchor constraintEqualToAnchor: superview.leftAnchor],
-                                                    [adView.rightAnchor constraintEqualToAnchor: superview.rightAnchor],
-                                                    [self.safeAreaBackground.leftAnchor constraintEqualToAnchor: superview.leftAnchor],
-                                                    [self.safeAreaBackground.rightAnchor constraintEqualToAnchor: superview.rightAnchor]]];
-                
-                if ( [adViewPosition isEqual: @"top_center"] )
-                {
-                    [constraints addObjectsFromArray: @[[adView.topAnchor constraintEqualToAnchor: layoutGuide.topAnchor],
-                                                        [self.safeAreaBackground.topAnchor constraintEqualToAnchor: superview.topAnchor],
-                                                        [self.safeAreaBackground.bottomAnchor constraintEqualToAnchor: adView.topAnchor]]];
-                }
-                else // bottom_center
-                {
-                    [constraints addObjectsFromArray: @[[adView.bottomAnchor constraintEqualToAnchor: layoutGuide.bottomAnchor],
-                                                        [self.safeAreaBackground.topAnchor constraintEqualToAnchor: adView.bottomAnchor],
-                                                        [self.safeAreaBackground.bottomAnchor constraintEqualToAnchor: superview.bottomAnchor]]];
-                }
-            }
+            adViewWidth = self.adViewWidths[adUnitIdentifier].floatValue;
         }
-        // If pub does not have a background color set or this is not a banner
+        // Top center / bottom center stretches full screen
+        else if ( [adViewPosition isEqual: @"top_center"] || [adViewPosition isEqual: @"bottom_center"] )
+        {
+            adViewWidth = CGRectGetWidth(KEY_WINDOW.bounds);
+        }
+        // Else use standard widths of 320, 728, or 300
         else
         {
-            self.safeAreaBackground.hidden = YES;
-            
-            [constraints addObjectsFromArray: @[[adView.widthAnchor constraintEqualToConstant: adViewWidth],
-                                                [adView.centerXAnchor constraintEqualToAnchor: layoutGuide.centerXAnchor]]];
-            
-            if ( [adViewPosition isEqual: @"top_center"] )
-            {
-                [constraints addObject: [adView.topAnchor constraintEqualToAnchor: layoutGuide.topAnchor]];
-            }
-            else // BottomCenter
-            {
-                [constraints addObject: [adView.bottomAnchor constraintEqualToAnchor: layoutGuide.bottomAnchor]];
-            }
+            adViewWidth = adFormat.size.width;
         }
-    }
-    // Check if the publisher wants vertical banners.
-    else if ( [adViewPosition isEqual: @"center_left"] || [adViewPosition isEqual: @"center_right"] )
-    {
-        if ( MAAdFormat.mrec == adFormat )
+        
+        //
+        // Determine ad height
+        //
+        CGFloat adViewHeight;
+        
+        if ( isHeightPtsOverridden )
         {
-            [constraints addObject: [adView.widthAnchor constraintEqualToConstant: adViewSize.width]];
-            
-            if ( [adViewPosition isEqual: @"center_left"] )
-            {
-                [constraints addObjectsFromArray: @[[adView.centerYAnchor constraintEqualToAnchor: layoutGuide.centerYAnchor],
-                                                    [adView.leftAnchor constraintEqualToAnchor: superview.leftAnchor]]];
-                
-                [constraints addObjectsFromArray: @[[self.safeAreaBackground.rightAnchor constraintEqualToAnchor: layoutGuide.leftAnchor],
-                                                    [self.safeAreaBackground.leftAnchor constraintEqualToAnchor: superview.leftAnchor]]];
-            }
-            else // center_right
-            {
-                [constraints addObjectsFromArray: @[[adView.centerYAnchor constraintEqualToAnchor: layoutGuide.centerYAnchor],
-                                                    [adView.rightAnchor constraintEqualToAnchor: superview.rightAnchor]]];
-                
-                [constraints addObjectsFromArray: @[[self.safeAreaBackground.leftAnchor constraintEqualToAnchor: layoutGuide.rightAnchor],
-                                                    [self.safeAreaBackground.rightAnchor constraintEqualToAnchor: superview.rightAnchor]]];
-            }
+            adViewHeight = self.adViewHeights[adUnitIdentifier].floatValue;
+        }
+        else if ( isAdaptiveBannerEnabled )
+        {
+            adViewHeight = [adFormat adaptiveSizeForWidth: adViewWidth].height;
         }
         else
         {
-            /* Align the center of the view such that when rotated it snaps into place.
-             *
-             *                  +---+---+-------+
-             *                  |   |           |
-             *                  |   |           |
-             *                  |   |           |
-             *                  |   |           |
-             *                  |   |           |
-             *                  |   |           |
-             *    +-------------+---+-----------+--+
-             *    |             | + |   +       |  |
-             *    +-------------+---+-----------+--+
-             *                  <+> |           |
-             *                  |+  |           |
-             *                  ||  |           |
-             *                  ||  |           |
-             *                  ||  |           |
-             *                  ||  |           |
-             *                  +|--+-----------+
-             *                   v
-             *            Banner Half Height
-             */
-            self.safeAreaBackground.hidden = YES;
+            adViewHeight = adFormat.size.height;
+        }
+        
+        CGSize adViewSize = CGSizeMake(adViewWidth, adViewHeight);
+        
+        // All positions have constant height
+        NSMutableArray<NSLayoutConstraint *> *constraints = [NSMutableArray arrayWithObject: [adView.heightAnchor constraintEqualToConstant: adViewSize.height]];
+        
+        UILayoutGuide *layoutGuide;
+        if ( @available(iOS 11.0, *) )
+        {
+            layoutGuide = superview.safeAreaLayoutGuide;
+        }
+        else
+        {
+            layoutGuide = superview.layoutMarginsGuide;
+        }
+        
+        if ( [adViewPosition isEqual: @"top_center"] || [adViewPosition isEqual: @"bottom_center"] )
+        {
+            // Non AdMob banners will still be of 50/90 points tall. Set the auto sizing mask such that the inner ad view is pinned to the bottom or top according to the ad view position.
+            if ( isAdaptiveBannerEnabled )
+            {
+                adView.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+                
+                if ( [@"top_center" isEqual: adViewPosition] )
+                {
+                    adView.autoresizingMask |= UIViewAutoresizingFlexibleBottomMargin;
+                }
+                else // bottom_center
+                {
+                    adView.autoresizingMask |= UIViewAutoresizingFlexibleTopMargin;
+                }
+            }
             
-            adView.transform = CGAffineTransformRotate(CGAffineTransformIdentity, M_PI_2);
-            
-            CGFloat width;
-            // If the publiser has a background color set - set the width to the height of the screen, to span the ad across the screen after it is rotated.
-            if ( self.publisherBannerBackgroundColor )
+            // If publisher actually provided a banner background color
+            if ( self.publisherBannerBackgroundColor && adFormat != MAAdFormat.mrec )
             {
                 if ( isWidthPtsOverridden )
                 {
-                    width = adViewWidth;
+                    [constraints addObjectsFromArray: @[[adView.widthAnchor constraintEqualToConstant: adViewWidth],
+                                                        [adView.centerXAnchor constraintEqualToAnchor: layoutGuide.centerXAnchor],
+                                                        [self.safeAreaBackground.widthAnchor constraintEqualToConstant: adViewWidth],
+                                                        [self.safeAreaBackground.centerXAnchor constraintEqualToAnchor: layoutGuide.centerXAnchor]]];
+                    
+                    if ( [adViewPosition isEqual: @"top_center"] )
+                    {
+                        [constraints addObjectsFromArray: @[[adView.topAnchor constraintEqualToAnchor: layoutGuide.topAnchor],
+                                                            [self.safeAreaBackground.topAnchor constraintEqualToAnchor: superview.topAnchor],
+                                                            [self.safeAreaBackground.bottomAnchor constraintEqualToAnchor: adView.topAnchor]]];
+                    }
+                    else // bottom_center
+                    {
+                        [constraints addObjectsFromArray: @[[adView.bottomAnchor constraintEqualToAnchor: layoutGuide.bottomAnchor],
+                                                            [self.safeAreaBackground.topAnchor constraintEqualToAnchor: adView.bottomAnchor],
+                                                            [self.safeAreaBackground.bottomAnchor constraintEqualToAnchor: superview.bottomAnchor]]];
+                    }
                 }
                 else
                 {
-                    width = CGRectGetHeight(KEY_WINDOW.bounds);
+                    [constraints addObjectsFromArray: @[[adView.leftAnchor constraintEqualToAnchor: superview.leftAnchor],
+                                                        [adView.rightAnchor constraintEqualToAnchor: superview.rightAnchor],
+                                                        [self.safeAreaBackground.leftAnchor constraintEqualToAnchor: superview.leftAnchor],
+                                                        [self.safeAreaBackground.rightAnchor constraintEqualToAnchor: superview.rightAnchor]]];
+                    
+                    if ( [adViewPosition isEqual: @"top_center"] )
+                    {
+                        [constraints addObjectsFromArray: @[[adView.topAnchor constraintEqualToAnchor: layoutGuide.topAnchor],
+                                                            [self.safeAreaBackground.topAnchor constraintEqualToAnchor: superview.topAnchor],
+                                                            [self.safeAreaBackground.bottomAnchor constraintEqualToAnchor: adView.topAnchor]]];
+                    }
+                    else // bottom_center
+                    {
+                        [constraints addObjectsFromArray: @[[adView.bottomAnchor constraintEqualToAnchor: layoutGuide.bottomAnchor],
+                                                            [self.safeAreaBackground.topAnchor constraintEqualToAnchor: adView.bottomAnchor],
+                                                            [self.safeAreaBackground.bottomAnchor constraintEqualToAnchor: superview.bottomAnchor]]];
+                    }
                 }
             }
-            // Otherwise - we shouldn't span the banner the width of the realm (there might be user-interactable UI on the sides)
+            // If pub does not have a background color set or this is not a banner
             else
             {
-                width = adViewWidth;
-            }
-            [constraints addObject: [adView.widthAnchor constraintEqualToConstant: width]];
-            
-            // Set constraints such that the center of the banner aligns with the center left or right as needed. That way, once rotated, the banner snaps into place.
-            [constraints addObject: [adView.centerYAnchor constraintEqualToAnchor: superview.centerYAnchor]];
-            
-            // Place the center of the banner half the height of the banner away from the side. If we align the center exactly with the left/right anchor, only half the banner will be visible.
-            CGFloat bannerHalfHeight = adViewSize.height / 2.0;
-            UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
-            if ( [adViewPosition isEqual: @"center_left"] )
-            {
-                NSLayoutAnchor *anchor = ( orientation == UIInterfaceOrientationLandscapeRight ) ? layoutGuide.leftAnchor : superview.leftAnchor;
-                [constraints addObject: [adView.centerXAnchor constraintEqualToAnchor: anchor constant: bannerHalfHeight]];
-            }
-            else // CenterRight
-            {
-                NSLayoutAnchor *anchor = ( orientation == UIInterfaceOrientationLandscapeLeft ) ? layoutGuide.rightAnchor : superview.rightAnchor;
-                [constraints addObject: [adView.centerXAnchor constraintEqualToAnchor: anchor constant: -bannerHalfHeight]];
-            }
-            
-            // Store the ad view with format, so that it can be updated when the orientation changes.
-            self.verticalAdViewFormats[adUnitIdentifier] = adFormat;
-            
-            // If adaptive - make top flexible since we anchor with the bottom of the banner at the edge of the screen
-            if ( isAdaptiveBannerEnabled )
-            {
-                adView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
+                self.safeAreaBackground.hidden = YES;
+                
+                [constraints addObjectsFromArray: @[[adView.widthAnchor constraintEqualToConstant: adViewWidth],
+                                                    [adView.centerXAnchor constraintEqualToAnchor: layoutGuide.centerXAnchor]]];
+                
+                if ( [adViewPosition isEqual: @"top_center"] )
+                {
+                    [constraints addObject: [adView.topAnchor constraintEqualToAnchor: layoutGuide.topAnchor]];
+                }
+                else // BottomCenter
+                {
+                    [constraints addObject: [adView.bottomAnchor constraintEqualToAnchor: layoutGuide.bottomAnchor]];
+                }
             }
         }
-    }
-    // Otherwise, publisher will likely construct his own views around the adview
-    else
-    {
-        self.safeAreaBackground.hidden = YES;
+        // Check if the publisher wants vertical banners.
+        else if ( [adViewPosition isEqual: @"center_left"] || [adViewPosition isEqual: @"center_right"] )
+        {
+            if ( MAAdFormat.mrec == adFormat )
+            {
+                [constraints addObject: [adView.widthAnchor constraintEqualToConstant: adViewSize.width]];
+                
+                if ( [adViewPosition isEqual: @"center_left"] )
+                {
+                    [constraints addObjectsFromArray: @[[adView.centerYAnchor constraintEqualToAnchor: layoutGuide.centerYAnchor],
+                                                        [adView.leftAnchor constraintEqualToAnchor: superview.leftAnchor]]];
+                    
+                    [constraints addObjectsFromArray: @[[self.safeAreaBackground.rightAnchor constraintEqualToAnchor: layoutGuide.leftAnchor],
+                                                        [self.safeAreaBackground.leftAnchor constraintEqualToAnchor: superview.leftAnchor]]];
+                }
+                else // center_right
+                {
+                    [constraints addObjectsFromArray: @[[adView.centerYAnchor constraintEqualToAnchor: layoutGuide.centerYAnchor],
+                                                        [adView.rightAnchor constraintEqualToAnchor: superview.rightAnchor]]];
+                    
+                    [constraints addObjectsFromArray: @[[self.safeAreaBackground.leftAnchor constraintEqualToAnchor: layoutGuide.rightAnchor],
+                                                        [self.safeAreaBackground.rightAnchor constraintEqualToAnchor: superview.rightAnchor]]];
+                }
+            }
+            else
+            {
+                /* Align the center of the view such that when rotated it snaps into place.
+                 *
+                 *                  +---+---+-------+
+                 *                  |   |           |
+                 *                  |   |           |
+                 *                  |   |           |
+                 *                  |   |           |
+                 *                  |   |           |
+                 *                  |   |           |
+                 *    +-------------+---+-----------+--+
+                 *    |             | + |   +       |  |
+                 *    +-------------+---+-----------+--+
+                 *                  <+> |           |
+                 *                  |+  |           |
+                 *                  ||  |           |
+                 *                  ||  |           |
+                 *                  ||  |           |
+                 *                  ||  |           |
+                 *                  +|--+-----------+
+                 *                   v
+                 *            Banner Half Height
+                 */
+                self.safeAreaBackground.hidden = YES;
+                
+                adView.transform = CGAffineTransformRotate(CGAffineTransformIdentity, M_PI_2);
+                
+                CGFloat width;
+                // If the publiser has a background color set - set the width to the height of the screen, to span the ad across the screen after it is rotated.
+                if ( self.publisherBannerBackgroundColor )
+                {
+                    if ( isWidthPtsOverridden )
+                    {
+                        width = adViewWidth;
+                    }
+                    else
+                    {
+                        width = CGRectGetHeight(KEY_WINDOW.bounds);
+                    }
+                }
+                // Otherwise - we shouldn't span the banner the width of the realm (there might be user-interactable UI on the sides)
+                else
+                {
+                    width = adViewWidth;
+                }
+                [constraints addObject: [adView.widthAnchor constraintEqualToConstant: width]];
+                
+                // Set constraints such that the center of the banner aligns with the center left or right as needed. That way, once rotated, the banner snaps into place.
+                [constraints addObject: [adView.centerYAnchor constraintEqualToAnchor: superview.centerYAnchor]];
+                
+                // Place the center of the banner half the height of the banner away from the side. If we align the center exactly with the left/right anchor, only half the banner will be visible.
+                CGFloat bannerHalfHeight = adViewSize.height / 2.0;
+                UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
+                if ( [adViewPosition isEqual: @"center_left"] )
+                {
+                    NSLayoutAnchor *anchor = ( orientation == UIInterfaceOrientationLandscapeRight ) ? layoutGuide.leftAnchor : superview.leftAnchor;
+                    [constraints addObject: [adView.centerXAnchor constraintEqualToAnchor: anchor constant: bannerHalfHeight]];
+                }
+                else // CenterRight
+                {
+                    NSLayoutAnchor *anchor = ( orientation == UIInterfaceOrientationLandscapeLeft ) ? layoutGuide.rightAnchor : superview.rightAnchor;
+                    [constraints addObject: [adView.centerXAnchor constraintEqualToAnchor: anchor constant: -bannerHalfHeight]];
+                }
+                
+                // Store the ad view with format, so that it can be updated when the orientation changes.
+                self.verticalAdViewFormats[adUnitIdentifier] = adFormat;
+                
+                // If adaptive - make top flexible since we anchor with the bottom of the banner at the edge of the screen
+                if ( isAdaptiveBannerEnabled )
+                {
+                    adView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
+                }
+            }
+        }
+        // Otherwise, publisher will likely construct his own views around the adview
+        else
+        {
+            self.safeAreaBackground.hidden = YES;
+            
+            [constraints addObject: [adView.widthAnchor constraintEqualToConstant: adViewWidth]];
+            
+            if ( [adViewPosition isEqual: @"top_left"] )
+            {
+                [constraints addObjectsFromArray: @[[adView.leftAnchor constraintEqualToAnchor: superview.leftAnchor constant: adViewOffset.x],
+                                                    [adView.topAnchor constraintEqualToAnchor: layoutGuide.topAnchor constant: adViewOffset.y]]];
+            }
+            else if ( [adViewPosition isEqual: @"top_right"] )
+            {
+                [constraints addObjectsFromArray: @[[adView.topAnchor constraintEqualToAnchor: layoutGuide.topAnchor],
+                                                    [adView.rightAnchor constraintEqualToAnchor: superview.rightAnchor]]];
+            }
+            else if ( [adViewPosition isEqual: @"centered"] )
+            {
+                [constraints addObjectsFromArray: @[[adView.centerXAnchor constraintEqualToAnchor: layoutGuide.centerXAnchor],
+                                                    [adView.centerYAnchor constraintEqualToAnchor: layoutGuide.centerYAnchor]]];
+            }
+            else if ( [adViewPosition isEqual: @"bottom_left"] )
+            {
+                [constraints addObjectsFromArray: @[[adView.bottomAnchor constraintEqualToAnchor: layoutGuide.bottomAnchor],
+                                                    [adView.leftAnchor constraintEqualToAnchor: superview.leftAnchor]]];
+            }
+            else if ( [adViewPosition isEqual: @"bottom_right"] )
+            {
+                [constraints addObjectsFromArray: @[[adView.bottomAnchor constraintEqualToAnchor: layoutGuide.bottomAnchor],
+                                                    [adView.rightAnchor constraintEqualToAnchor: superview.rightAnchor]]];
+            }
+        }
         
-        [constraints addObject: [adView.widthAnchor constraintEqualToConstant: adViewWidth]];
+        if ( isRotationOverridden )
+        {
+            adView.transform = CGAffineTransformRotate(CGAffineTransformIdentity, DEGREES_TO_RADIANS(self.adViewRotations[adUnitIdentifier].floatValue));
+        }
         
-        if ( [adViewPosition isEqual: @"top_left"] )
-        {
-            [constraints addObjectsFromArray: @[[adView.leftAnchor constraintEqualToAnchor: superview.leftAnchor constant: adViewOffset.x],
-                                                [adView.topAnchor constraintEqualToAnchor: layoutGuide.topAnchor constant: adViewOffset.y]]];
-        }
-        else if ( [adViewPosition isEqual: @"top_right"] )
-        {
-            [constraints addObjectsFromArray: @[[adView.topAnchor constraintEqualToAnchor: layoutGuide.topAnchor],
-                                                [adView.rightAnchor constraintEqualToAnchor: superview.rightAnchor]]];
-        }
-        else if ( [adViewPosition isEqual: @"centered"] )
-        {
-            [constraints addObjectsFromArray: @[[adView.centerXAnchor constraintEqualToAnchor: layoutGuide.centerXAnchor],
-                                                [adView.centerYAnchor constraintEqualToAnchor: layoutGuide.centerYAnchor]]];
-        }
-        else if ( [adViewPosition isEqual: @"bottom_left"] )
-        {
-            [constraints addObjectsFromArray: @[[adView.bottomAnchor constraintEqualToAnchor: layoutGuide.bottomAnchor],
-                                                [adView.leftAnchor constraintEqualToAnchor: superview.leftAnchor]]];
-        }
-        else if ( [adViewPosition isEqual: @"bottom_right"] )
-        {
-            [constraints addObjectsFromArray: @[[adView.bottomAnchor constraintEqualToAnchor: layoutGuide.bottomAnchor],
-                                                [adView.rightAnchor constraintEqualToAnchor: superview.rightAnchor]]];
-        }
-    }
-    
-    if ( isRotationOverridden )
-    {
-        adView.transform = CGAffineTransformRotate(CGAffineTransformIdentity, DEGREES_TO_RADIANS(self.adViewRotations[adUnitIdentifier].floatValue));
-    }
-    
-    self.adViewConstraints[adUnitIdentifier] = constraints;
-    
-    [NSLayoutConstraint activateConstraints: constraints];
+        self.adViewConstraints[adUnitIdentifier] = constraints;
+        
+        [NSLayoutConstraint activateConstraints: constraints];
+    });
 }
 
 + (UIViewController *)unityViewController

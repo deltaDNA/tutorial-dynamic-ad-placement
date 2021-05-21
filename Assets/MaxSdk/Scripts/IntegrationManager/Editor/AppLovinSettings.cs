@@ -23,13 +23,21 @@ public class AppLovinSettings : ScriptableObject
 {
     public const string SettingsExportPath = "MaxSdk/Resources/AppLovinSettings.asset";
 
-    public const string DefaultUserTrackingDescriptionEn = "Pressing \\\"Allow\\\" uses device info for more relevant ad content";
+    public const string DefaultUserTrackingDescriptionEnV0 = "Pressing \\\"Allow\\\" uses device info for more relevant ad content";
+    public const string DefaultUserTrackingDescriptionEnV1 = "This only uses device info for less annoying, more relevant ads";
+
     public const string DefaultUserTrackingDescriptionDe = "\\\"Erlauben\\\" drücken benutzt Gerätinformationen für relevantere Werbeinhalte";
     public const string DefaultUserTrackingDescriptionEs = "Presionando \\\"Permitir\\\", se usa la información del dispositivo para obtener contenido publicitario más relevante";
     public const string DefaultUserTrackingDescriptionFr = "\\\"Autoriser\\\" permet d'utiliser les infos du téléphone pour afficher des contenus publicitaires plus pertinents";
     public const string DefaultUserTrackingDescriptionJa = "\\\"許可\\\"をクリックすることで、デバイス情報を元により最適な広告を表示することができます";
     public const string DefaultUserTrackingDescriptionKo = "\\\"허용\\\"을 누르면 더 관련성 높은 광고 콘텐츠를 제공하기 위해 기기 정보가 사용됩니다";
     public const string DefaultUserTrackingDescriptionZhHans = "点击\\\"允许\\\"以使用设备信息获得更加相关的广告内容";
+    public const string DefaultUserTrackingDescriptionZhHant = "點擊\\\"允許\\\"以使用設備信息獲得更加相關的廣告內容";
+
+    /// <summary>
+    /// A placeholder constant to be replaced with the actual default localization or an empty string based on whether or not localization is enabled when when the getter is called.
+    /// </summary>
+    protected const string DefaultLocalization = "default_localization";
 
     private static AppLovinSettings instance;
 
@@ -38,6 +46,7 @@ public class AppLovinSettings : ScriptableObject
 
     [SerializeField] private bool consentFlowEnabled;
     [SerializeField] private string consentFlowPrivacyPolicyUrl = string.Empty;
+    [SerializeField] private string consentFlowTermsOfServiceUrl = string.Empty;
     [FormerlySerializedAs("userTrackingUsageDescription")] [SerializeField] private string userTrackingUsageDescriptionEn = string.Empty;
     [SerializeField] private bool userTrackingUsageLocalizationEnabled;
     [SerializeField] private string userTrackingUsageDescriptionDe = string.Empty;
@@ -46,6 +55,7 @@ public class AppLovinSettings : ScriptableObject
     [SerializeField] private string userTrackingUsageDescriptionJa = string.Empty;
     [SerializeField] private string userTrackingUsageDescriptionKo = string.Empty;
     [SerializeField] private string userTrackingUsageDescriptionZhHans = string.Empty;
+    [SerializeField] private string userTrackingUsageDescriptionZhHant = DefaultLocalization;
 
     [SerializeField] private string adMobAndroidAppId = string.Empty;
     [SerializeField] private string adMobIosAppId = string.Empty;
@@ -118,7 +128,16 @@ public class AppLovinSettings : ScriptableObject
     /// </summary>
     public bool ConsentFlowEnabled
     {
-        get { return Instance.consentFlowEnabled; }
+        get
+        {
+            // Update the default EN description if an old version of the description is still being used.
+            if (DefaultUserTrackingDescriptionEnV0.Equals(Instance.UserTrackingUsageDescriptionEn))
+            {
+                Instance.UserTrackingUsageDescriptionEn = DefaultUserTrackingDescriptionEnV1;
+            }
+
+            return Instance.consentFlowEnabled;
+        }
         set
         {
             var previousValue = Instance.consentFlowEnabled;
@@ -128,13 +147,14 @@ public class AppLovinSettings : ScriptableObject
             {
                 // If the value didn't change, we don't need to update anything.
                 if (previousValue) return;
-                
-                Instance.UserTrackingUsageDescriptionEn = DefaultUserTrackingDescriptionEn;
+
+                Instance.UserTrackingUsageDescriptionEn = DefaultUserTrackingDescriptionEnV1;
                 Instance.UserTrackingUsageLocalizationEnabled = true;
             }
             else
             {
                 Instance.ConsentFlowPrivacyPolicyUrl = string.Empty;
+                Instance.ConsentFlowTermsOfServiceUrl = string.Empty;
                 Instance.UserTrackingUsageDescriptionEn = string.Empty;
                 Instance.UserTrackingUsageLocalizationEnabled = false;
             }
@@ -148,6 +168,15 @@ public class AppLovinSettings : ScriptableObject
     {
         get { return Instance.consentFlowPrivacyPolicyUrl; }
         set { Instance.consentFlowPrivacyPolicyUrl = value; }
+    }
+
+    /// <summary>
+    /// An optional URL pointing to the Terms of Service for the app to be shown when prompting the user for consent. 
+    /// </summary>
+    public string ConsentFlowTermsOfServiceUrl
+    {
+        get { return Instance.consentFlowTermsOfServiceUrl; }
+        set { Instance.consentFlowTermsOfServiceUrl = value; }
     }
 
     /// <summary>
@@ -175,7 +204,7 @@ public class AppLovinSettings : ScriptableObject
             if (value)
             {
                 // If the value didn't change or the english localization text is not the default one, we don't need to update anything.
-                if (previousValue || !DefaultUserTrackingDescriptionEn.Equals(Instance.UserTrackingUsageDescriptionEn)) return;
+                if (previousValue || !DefaultUserTrackingDescriptionEnV1.Equals(Instance.UserTrackingUsageDescriptionEn)) return;
 
                 Instance.UserTrackingUsageDescriptionDe = DefaultUserTrackingDescriptionDe;
                 Instance.UserTrackingUsageDescriptionEs = DefaultUserTrackingDescriptionEs;
@@ -183,15 +212,17 @@ public class AppLovinSettings : ScriptableObject
                 Instance.UserTrackingUsageDescriptionJa = DefaultUserTrackingDescriptionJa;
                 Instance.UserTrackingUsageDescriptionKo = DefaultUserTrackingDescriptionKo;
                 Instance.UserTrackingUsageDescriptionZhHans = DefaultUserTrackingDescriptionZhHans;
+                Instance.UserTrackingUsageDescriptionZhHant = DefaultUserTrackingDescriptionZhHant;
             }
             else
             {
-                Instance.UserTrackingUsageDescriptionZhHans = string.Empty;
-                Instance.UserTrackingUsageDescriptionFr = string.Empty;
                 Instance.UserTrackingUsageDescriptionDe = string.Empty;
+                Instance.UserTrackingUsageDescriptionEs = string.Empty;
+                Instance.UserTrackingUsageDescriptionFr = string.Empty;
                 Instance.UserTrackingUsageDescriptionJa = string.Empty;
                 Instance.UserTrackingUsageDescriptionKo = string.Empty;
-                Instance.UserTrackingUsageDescriptionEs = string.Empty;
+                Instance.UserTrackingUsageDescriptionZhHans = string.Empty;
+                Instance.UserTrackingUsageDescriptionZhHant = string.Empty;
             }
         }
     }
@@ -254,6 +285,26 @@ public class AppLovinSettings : ScriptableObject
     {
         get { return Instance.userTrackingUsageDescriptionZhHans; }
         set { Instance.userTrackingUsageDescriptionZhHans = value; }
+    }
+
+    /// <summary>
+    /// A User Tracking Usage Description in Chinese (Traditional) to be shown to users when requesting permission to use data for tracking.
+    /// For more information see <see cref="https://developer.apple.com/documentation/bundleresources/information_property_list/nsusertrackingusagedescription">Apple's documentation</see>.
+    /// </summary>
+    public string UserTrackingUsageDescriptionZhHant
+    {
+        get
+        {
+            // Since this localization has been added separate from the other localizations,
+            // we use a placeholder constant to be replaced with the actual value or an empty string based on whether or not the localization was enabled by the publisher.
+            if (DefaultLocalization.Equals(Instance.userTrackingUsageDescriptionZhHant))
+            {
+                Instance.userTrackingUsageDescriptionZhHant = Instance.UserTrackingUsageLocalizationEnabled ? DefaultUserTrackingDescriptionZhHant : string.Empty;
+            }
+
+            return Instance.userTrackingUsageDescriptionZhHant;
+        }
+        set { Instance.userTrackingUsageDescriptionZhHant = value; }
     }
 
     /// <summary>

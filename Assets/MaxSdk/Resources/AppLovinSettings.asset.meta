@@ -3,6 +3,7 @@ guid: 8b98a7839ebb64ab592a31342004f708
 labels:
 - al_max
 - al_max_export_path-MaxSdk/Resources/AppLovinSettings.asset
+- al_max_export_path-MaxSdk\Resources\AppLovinSettings.asset
 NativeFormatImporter:
   externalObjects: {}
   mainObjectFileID: 0

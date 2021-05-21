@@ -77,9 +77,22 @@ namespace AppLovinMax.Scripts.IntegrationManager.Editor
                    && (Ios == null || Ios.Equals(versions.Ios));
         }
 
+        public bool HasEqualSdkVersions(Versions versions)
+        {
+            return versions != null
+                   && AdapterSdkVersion(Android).Equals(AdapterSdkVersion(versions.Android))
+                   && AdapterSdkVersion(Ios).Equals(AdapterSdkVersion(versions.Ios));
+        }
+
         public override int GetHashCode()
         {
             return new {Unity, Android, Ios}.GetHashCode();
+        }
+
+        private static string AdapterSdkVersion(string adapterVersion)
+        {
+            var index = adapterVersion.LastIndexOf(".");
+            return index > 0 ? adapterVersion.Substring(0, index) : adapterVersion;
         }
     }
 
