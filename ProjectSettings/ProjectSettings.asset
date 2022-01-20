@@ -249,8 +249,8 @@ PlayerSettings:
   AndroidTargetArchitectures: 2
   AndroidSplashScreenScale: 0
   androidSplashScreen: {fileID: 0}
-  AndroidKeystoreName: '{dedicated}: snake.keystore'
-  AndroidKeyaliasName: snake
+  AndroidKeystoreName: '{dedicated}: user.keystore'
+  AndroidKeyaliasName: u-laurie
   AndroidBuildApkPerCpuArchitecture: 0
   AndroidTVCompatibility: 0
   AndroidIsGame: 1
