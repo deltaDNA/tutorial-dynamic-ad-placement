@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using DeltaDNA; 
+using Unity.Services.Analytics;
+using Unity.Services.Core;
 
 public class GameManager : MonoBehaviour
 {
@@ -107,27 +108,27 @@ public class GameManager : MonoBehaviour
         else if (game.gameState == GameState.PLAYING)
         {
             if (Input.touchCount > 0)
-            {                
+            {
                 Touch touch = Input.GetTouch(0);
-               
-                if (touch.phase == TouchPhase.Began && swipeDirection ==SwipeDirection.None)
+
+                if (touch.phase == TouchPhase.Began && swipeDirection == SwipeDirection.None)
                 {
                     touchStart = touch.position;
                 }
                 else if (touch.phase == TouchPhase.Moved && swipeDirection == SwipeDirection.None)
-                {                   
-                    Vector2 direction = touch.position - touchStart; 
+                {
+                    Vector2 direction = touch.position - touchStart;
 
                     if (System.Math.Abs(direction.x) > System.Math.Abs(direction.y))
                     {
                         // Horizontal Swipe
-                        swipeDirection = direction.x > 0 ? SwipeDirection.Right : SwipeDirection.Left;                        
+                        swipeDirection = direction.x > 0 ? SwipeDirection.Right : SwipeDirection.Left;
                     }
                     else
                     {
                         // Vertical Swipe
                         swipeDirection = direction.y > 0 ? SwipeDirection.Up : SwipeDirection.Down;
-                    }                    
+                    }
                 }
             }
 
@@ -138,16 +139,19 @@ public class GameManager : MonoBehaviour
 
 
             // Record MissionCompleted Event
-            GameEvent missionCompleted = new GameEvent("missionCompleted")
-                .AddParam("missionID", game.currentLevel.ToString())
-                .AddParam("missionName", string.Format("Mission {0}", game.currentLevel))
-                .AddParam("foodTarget", game.levels[game.currentLevel].food)                
-                .AddParam("missionReward",game.levels[game.currentLevel].reward)
-                .AddParam("debugMode", debugMode);
+            // UGS Refactored
+            Dictionary<string, object> parameters = new Dictionary<string, object>()
+            {
+                // Parameters commented out until event schema can be fixed.
+                //{"missionID", game.currentLevel.ToString() },
+                //{"missionName", string.Format("Mission {0}", game.currentLevel) },
+                //{"foodTarget", game.levels[game.currentLevel].food },               
+                //{"missionReward",game.levels[game.currentLevel].reward},
+                //{ "debugMode", debugMode}
+            };
 
-            DDNA.Instance.RecordEvent(missionCompleted).Run();
-
-            game.currentLevel++; 
+            Events.CustomData("missionCompleted", parameters);
+            game.currentLevel++;
             if (game.currentLevel == game.levels.Count)
             {
                 game.currentLevel = 0;
@@ -158,17 +162,20 @@ public class GameManager : MonoBehaviour
 
             StartLevel(game.currentLevel);
         }
-        else if(game.gameState == GameState.DEAD)
+        else if (game.gameState == GameState.DEAD)
         {
             // Record MissionFailed event
-            GameEvent missionFailed = new GameEvent("missionFailed")
-                .AddParam("missionID", game.currentLevel.ToString())
-                .AddParam("missionName", string.Format("Mission {0}", game.currentLevel))
-                .AddParam("foodRemaining", foodList.Count)
-                .AddParam("debugMode", debugMode);
+            // UGS Refactored
+            Dictionary<string, object> parameters = new Dictionary<string, object>()
+            {
+                // Parameters commented out until event schema can be fixed.
+                //{ "missionID", game.currentLevel.ToString() },
+                //{ "missionName", string.Format("Mission {0}", game.currentLevel) },
+                //{ "foodRemaining", foodList.Count },
+                //{ "debugMode", debugMode }
+            };
+            Events.CustomData("missionFailed", parameters);
 
-            DDNA.Instance.RecordEvent(missionFailed).Run();
-                     
             ResetGame();
 
             txtStart.gameObject.SetActive(true);
@@ -220,9 +227,8 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-
-            GameEvent outOfCoins = new GameEvent("outOfCoins");
-            DDNA.Instance.RecordEvent(outOfCoins).Run();
+            // UGS Refactored
+            Events.CustomData("outOfCoins", new Dictionary<string, object>());
         }
 
     }
@@ -244,15 +250,18 @@ public class GameManager : MonoBehaviour
 
 
             // Record MissionStarted event
-            GameEvent missionStarted = new GameEvent("missionStarted")
-                .AddParam("missionID", game.currentLevel.ToString())
-                .AddParam("missionName", string.Format("Mission {0}", game.currentLevel))
-                .AddParam("foodTarget", game.levels[game.currentLevel].food)
-                .AddParam("missionCost", game.levels[game.currentLevel].cost)
-                .AddParam("debugMode", debugMode);
-
-            DDNA.Instance.RecordEvent(missionStarted).Run();
-
+            // UGS Refactored
+            Dictionary<string, object> parameters = new Dictionary<string, object>()
+            {
+                // Removed until events schema is fixed
+                //{"missionID", game.currentLevel.ToString() },
+                //{"missionName", string.Format("Mission {0}", game.currentLevel) },
+                //{"foodTarget", game.levels[game.currentLevel].food },
+                //{"missionCost", game.levels[game.currentLevel].cost },
+                //{"debugMode", debugMode }
+            };
+            
+            Events.CustomData("missionStarted", parameters);
         } // TODO add condition for not enough funds later
             
     }

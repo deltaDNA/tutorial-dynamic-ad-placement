@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using DeltaDNA;
+using Unity.Services.Analytics;
+using Unity.Services.Core;
 
 
 public class GameConsole : MonoBehaviour {
@@ -57,10 +58,12 @@ public class GameConsole : MonoBehaviour {
 
     public void UpdateConsole()
     {
-        textDdnaUserID.text = "DDNA UserID : " + DDNA.Instance.UserID;
-        textSessionID.text = "SessionID : " + DDNA.Instance.SessionID;
-        textDdnaSDKVersion.text = "DDNA SDK Version : " + Settings.SDK_VERSION;
+        // UGS Removed
+        //textDdnaUserID.text = "DDNA UserID : " + DDNA.Instance.UserID;
+        //textSessionID.text = "SessionID : " + DDNA.Instance.SessionID;
+        
+        //textDdnaSDKVersion.text = "DDNA SDK Version : " + Settings.SDK_VERSION;
         textUnityVersion.text = "Unity Version : " + Application.unityVersion;
-        textClientVersion.text = "Client Version : " + DDNA.Instance.ClientVersion; 
+        //textClientVersion.text = "Client Version : " + DDNA.Instance.ClientVersion; 
     }
 }

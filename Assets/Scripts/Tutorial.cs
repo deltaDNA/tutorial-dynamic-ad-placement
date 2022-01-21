@@ -2,9 +2,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using DeltaDNA;
 using UnityEngine.Advertisements;
-
+using Unity.Services.Analytics;
+using Unity.Services.Core;
 
 public class Tutorial : MonoBehaviour, IUnityAdsListener
 {
@@ -44,7 +44,7 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
     private int adRewardValue;
 
     // Start is called before the first frame update
-    void Start()
+    async void Start()
     {
         // Congifure Enabled Ad Networks
         if (isUnityAdsEnabled) ConfigureUnityAds();
@@ -53,27 +53,30 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         if (isApplovinMaxAdsEnabled) ConfigureApplovinMaxAds();
 
         // Hook up callback to fire when DDNA SDK has received session config info, including Event Triggered campaigns.
-        DDNA.Instance.NotifyOnSessionConfigured(true);
-        DDNA.Instance.OnSessionConfigured += (bool cachedConfig) => GetGameConfig(cachedConfig);
+        // UGS Removed
+        //DDNA.Instance.NotifyOnSessionConfigured(true);
+        //DDNA.Instance.OnSessionConfigured += (bool cachedConfig) => GetGameConfig(cachedConfig);
 
 
         // Allow multiple game parameter actions callbacks from a single event trigger        
-        DDNA.Instance.Settings.MultipleActionsForEventTriggerEnabled = true;
+        // UGS Removed
+        //DDNA.Instance.Settings.MultipleActionsForEventTriggerEnabled = true;
 
         //Register default handlers for event triggered campaigns. These will be candidates for handling ANY Event-Triggered Campaigns. 
         //Any handlers added to RegisterEvent() calls with the .Add method will be evaluated before these default handlers. 
-        DDNA.Instance.Settings.DefaultImageMessageHandler =
-            new ImageMessageHandler(DDNA.Instance, imageMessage => {
+        // UGS Removed
+        // DDNA.Instance.Settings.DefaultImageMessageHandler =
+        //    new ImageMessageHandler(DDNA.Instance, imageMessage => {
                 // do something with the image message
-                myImageMessageHandler(imageMessage);
-            });
-        DDNA.Instance.Settings.DefaultGameParameterHandler = new GameParametersHandler(gameParameters => {
+        //        myImageMessageHandler(imageMessage);
+        //    });
+        //DDNA.Instance.Settings.DefaultGameParameterHandler = new GameParametersHandler(gameParameters => {
             // do something with the game parameters
-            myGameParameterHandler(gameParameters);
-        });
+        //    myGameParameterHandler(gameParameters);
+        //});
 
-        DDNA.Instance.SetLoggingLevel(DeltaDNA.Logger.Level.DEBUG);
-        DDNA.Instance.StartSDK();
+        await UnityServices.InitializeAsync();
+    
     }
 
     void OnApplicationPause(bool isPaused)
@@ -96,16 +99,16 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         Debug.Log("Recording a sdkConfigured event for Event Triggered Campaign to react to");
 
         // Create an sdkConfigured event object
-        var gameEvent = new GameEvent("sdkConfigured")
-            .AddParam("clientVersion", DDNA.Instance.ClientVersion)
-            .AddParam("userLevel", gameManager.game.currentLevel);
-
-        // Record sdkConfigured event and run default response hander
-        DDNA.Instance.RecordEvent(gameEvent).Run();
+        Dictionary<string, object> parameters = new Dictionary<string, object>()
+        {
+           { "userLevel" , gameManager.game.currentLevel}
+        };
+        // Record sdkConfigured event
+        Events.CustomData("sdkConfigured", parameters);        
     }
 
 
-
+    /*
     private void myImageMessageHandler(ImageMessage imageMessage)
     {
         // Add a handler for the 'dismiss' action.
@@ -132,7 +135,8 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         // the image message is already cached and prepared so it will show instantly
         imageMessage.Show();
     }
-
+    */
+    /*
     private void myGameParameterHandler(Dictionary<string, object> gameParameters)
     {
         // ------------------------------------------------------------------------------------------
@@ -193,7 +197,7 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         // --------------------------------------------------------------------------------------------
 
     }
-
+    */
     #region UnityAds
     /// <summary>
     /// Unity Ads Stuff
@@ -210,7 +214,8 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
 
     public void UnityShowRewardedAd()
     {
-        
+        // UGS Removed
+        /*
         // Send the deltaDNA userID to Unity Ads to
         // recveive adRevenue event bacm in DDNA
         ShowOptions options = new ShowOptions();
@@ -224,9 +229,9 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         metaData.Set("environmentKey", DDNA.Instance.EnvironmentKey);
         
         Advertisement.SetMetaData(metaData);
-
+        */
         // Show Unity Ad
-        Advertisement.Show(unityAdsPlacementId, options);
+        Advertisement.Show(unityAdsPlacementId); // , options);
         Debug.Log("Showing Unity Ad version + " + Advertisement.version);
     }
 
@@ -253,15 +258,17 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
             gameManager.ReceiveCurrency(adRewardValue);
 
         }
+        // UGS Refactored
+        Dictionary<string, object> parameters = new Dictionary<string, object>()
+        {
+            {"adCompletionStatus", isAdFinished ? "COMPLETED" : "INCOMPLETE" },
+            {"adProvider", "Unity Ads" },
+            {"placementType", "REWARDED AD" },
+            { "placementId", placementId},
+            {"placementType", placementId }
+        };
 
-        GameEvent adEvent = new GameEvent("adImpression")
-                .AddParam("adCompletionStatus", isAdFinished ? "COMPLETED" : "INCOMPLETE")
-                .AddParam("adProvider", "Unity Ads")
-                .AddParam("placementType", "REWARDED AD")
-                .AddParam("placementId", placementId)
-                .AddParam("placementType", placementId);
-
-        DDNA.Instance.RecordEvent(adEvent).Run();
+        Events.CustomData("adImpression", parameters);
     }
     #endregion
 
@@ -320,19 +327,24 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         // to the adImpression event in this example, but it you could extend this event in the Event Manager tool to accomodate them.
         Debug.Log("Impression Data" + impressionData.JsonRepresentation.ToString());
 
+        // UGS Refactored
+        Dictionary<string, object> parameters = new Dictionary<string, object>()
+        {
 
-        GameEvent adEvent = new GameEvent("adImpression")
-         .AddParam("adCompletionStatus", "COMPLETED")
-         .AddParam("adProvider", "MoPub ")
-         .AddParam("placementType", "REWARDED AD")
-         .AddParam("placementId", impressionData.AdUnitId)
-         .AddParam("placementName", impressionData.AdUnitName);
+            {"adCompletionStatus", "COMPLETED" },
+            {"adProvider", "MoPub " },
+            {"placementType", "REWARDED AD" },
+            { "placementId", impressionData.AdUnitId },
+            { "placementName", impressionData.AdUnitName }
+        };
 
         // Add impression value if available. Multiplying publisher revenue by 1000 to get CPM value
-        if (impressionData.PublisherRevenue != null) adEvent.AddParam("adEcpmUsd", System.Convert.ToDouble(impressionData.PublisherRevenue) * 1000);
+        if (impressionData.PublisherRevenue != null)
+        {
+            parameters.Add("adEcpmUsd", System.Convert.ToDouble(impressionData.PublisherRevenue) * 1000);
+        }
 
-
-        DDNA.Instance.RecordEvent(adEvent).Run();
+        Events.CustomData("adImpression", parameters);
     }
     #endregion
 
@@ -408,18 +420,23 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
             //Debug.Log("Impression Data" + impressionData.JsonRepresentation.ToString());
 
             Debug.Log("Recording adImpression event");
+            // UGS Refactored
+            Dictionary<string, object> parameters = new Dictionary<string, object>()
+            {
+                { "adProvider", "IronSource " },
+                { "placementType", "REWARDED AD" },
+                { "placementId", ironSourceSsp.getPlacementName() },
+                { "placementName", ironSourceSsp.getPlacementName() },
+                { "adCompletionStatus", ironSourceCompletionStatus }
+            };
 
-            GameEvent adEvent = new GameEvent("adImpression")
-             .AddParam("adProvider", "IronSource ")
-             .AddParam("placementType", "REWARDED AD")
-             .AddParam("placementId", ironSourceSsp.getPlacementName())
-             .AddParam("placementName", ironSourceSsp.getPlacementName())
-             .AddParam("adCompletionStatus", ironSourceCompletionStatus);
-            
             // Add impression value if available. Multiplying publisher revenue by 1000 to get CPM value
-            if (ironSourceImpressionData != null) adEvent.AddParam("adEcpmUsd", System.Convert.ToDouble(ironSourceImpressionData.revenue) * 1000);
+            if (ironSourceImpressionData != null)
+            {
+                parameters.Add("adEcpmUsd", System.Convert.ToDouble(ironSourceImpressionData.revenue) * 1000);
+            }
 
-            DDNA.Instance.RecordEvent(adEvent).Run();
+            Events.CustomData("adImpression", parameters);
             ironSourceSsp = null;
             ironSourceImpressionData = null; 
         }
@@ -535,20 +552,21 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
 
     private void OnRewardedAdDismissedEvent(string adUnitId)
     {
-        
-        GameEvent adEvent = new GameEvent("adImpression")
-            .AddParam("adCompletionStatus", maxRewardReached ? "COMPLETED" : "INCOMPLETE")
-            .AddParam("adProvider", "ApplovinMAX Ads")
-            .AddParam("placementType", "REWARDED AD")
-            .AddParam("placementId", adUnitId)
-            .AddParam("placementType","Dynamic Placement");
+        // UGS Refactored
+        Dictionary<string, object> parameters = new Dictionary<string, object>()
+        {
 
+            { "adCompletionStatus", maxRewardReached ? "COMPLETED" : "INCOMPLETE" },
+            { "adProvider", "ApplovinMAX Ads"},
+            { "placementType", "REWARDED AD" },
+            { "placementId", adUnitId },
+            { "placementType","Dynamic Placement" }
+    };
         double revenue = MaxSdk.GetAdInfo(adUnitId).Revenue;
         if (revenue > 0)
-            adEvent.AddParam("adEcpmUsd", revenue * 1000); 
-
-        DDNA.Instance.RecordEvent(adEvent).Run();
-
+            parameters.Add("adEcpmUsd", revenue * 1000); 
+        
+        Events.CustomData("adImpression", parameters); 
         // Rewarded ad is hidden. Pre-load the next ad
         LoadRewardedAd();
        
