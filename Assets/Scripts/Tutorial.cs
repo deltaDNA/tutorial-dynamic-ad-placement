@@ -139,7 +139,7 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         // ------------------------------------------------------------------------------------------
         // Parameters to remotely control Ads Received      
         // ------------------------------------------------------------------------------------------
-        Debug.Log("Received game parameters from event trigger: " + DeltaDNA.MiniJSON.Json.Serialize(gameParameters));
+        //Debug.Log("Received game parameters from event trigger: " + DeltaDNA.MiniJSON.Json.Serialize(gameParameters));
         if (gameParameters.ContainsKey("adShow"))
         {
             if (System.Convert.ToInt32(gameParameters["adShow"]) == 1)
