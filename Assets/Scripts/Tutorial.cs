@@ -4,7 +4,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using DeltaDNA;
 using UnityEngine.Advertisements;
-
+using Unity.Services.Analytics;
+using Unity.Services.Core;
 
 public class Tutorial : MonoBehaviour, IUnityAdsListener
 {
@@ -44,8 +45,11 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
     private int adRewardValue;
 
     // Start is called before the first frame update
-    void Start()
+    async void Start()
     {
+        // Start UGS Analytics
+        await UnityServices.InitializeAsync();
+
         // Congifure Enabled Ad Networks
         if (isUnityAdsEnabled) ConfigureUnityAds();
         if (isMoPubAdsEnabled) ConfigureMoPubAds();
