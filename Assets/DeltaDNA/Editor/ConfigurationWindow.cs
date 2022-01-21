@@ -38,7 +38,7 @@ namespace DeltaDNA.Editor
         
         // config
         
-        private NotificationsConfigurator notifications;
+        //private NotificationsConfigurator notifications;
         private iOSConfiguration iOS;
         
         void OnEnable() {
@@ -147,7 +147,7 @@ namespace DeltaDNA.Editor
             GUILayout.Space(WindowHelper.HEIGHT_SEPARATOR);
             
             EditorGUI.BeginChangeCheck();
-
+            /*
             foldoutAndroidNotifications = CreateFoldout(
                 foldoutAndroidNotifications,
                 "Android Notifications",
@@ -208,7 +208,7 @@ namespace DeltaDNA.Editor
                     Debug.Log("[DeltaDNA] Changes have been applied to XML configuration files, please commit the updates to version control");
                 }
             }
-
+            */
             GUILayout.Space(WindowHelper.HEIGHT_SEPARATOR);
 
 
@@ -254,7 +254,7 @@ namespace DeltaDNA.Editor
         
         private void Load() {
             iOS = iOSConfiguration.Load();
-            notifications = new NotificationsConfigurator();
+            //notifications = new NotificationsConfigurator();
         }
 
         private static bool CreateFoldout(
@@ -269,12 +269,12 @@ namespace DeltaDNA.Editor
             return EditorGUILayout.Foldout(foldout, content, style);
 #endif
         }
-        
+        /*
         private static bool AreAndroidNotificationsInProject() 
         {
             return Directory.Exists(NotificationsConfigurator.NOTIFICATION_PATH);
         }
-
+        */
         private SerializedObject GetSerializedConfig()
         {
             Configuration cfg = AssetDatabase.LoadAssetAtPath<Configuration>(Configuration.FULL_ASSET_PATH);
@@ -296,7 +296,7 @@ namespace DeltaDNA.Editor
 
             return new SerializedObject(cfg);
         }
-        
+        /*
         private void ApplyAndroidNotificationSettings()
         {
             // Ensure that all fields are filled in
@@ -381,7 +381,7 @@ namespace DeltaDNA.Editor
             File.Copy(sourceFile, targetFile);
             AssetDatabase.ImportAsset(assetTargetPath);
         }
-
+        */
         // Adapted from https://docs.microsoft.com/en-us/dotnet/standard/io/how-to-copy-directories
         // as there was no inbuilt method to copy a directory recursively.
         private static void DirectoryCopy(string sourceDirName, string destDirName)
