@@ -741,10 +741,10 @@ PlayerSettings:
     m_VersionCode: 1
     m_VersionName: 
   apiCompatibilityLevel: 6
-  cloudProjectId: 74d98345-ed5c-4f1d-8a73-8373800aabd0
+  cloudProjectId: 48c20916-ffcc-446d-be03-a62824343db3
   framebufferDepthMemorylessMode: 0
-  projectName: tutorial-dynamic-ad-placement
-  organizationId: unity_lauriemcculloch
+  projectName: 'Tutorial :: Dynamic Ad Placement'
+  organizationId: unity_rhqb9idvhxjeyq
   cloudEnabled: 0
   enableNativePlatformBackendsForNewInputSystem: 0
   disableOldInputManagerSupport: 0
