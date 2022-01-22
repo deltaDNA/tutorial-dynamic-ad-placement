@@ -61,18 +61,6 @@ namespace DeltaDNA
         /// </summary>
         private bool? notificationsPresent;
 
-        void Awake()
-        {
-            gameObject.name = this.GetType().ToString();
-            DontDestroyOnLoad(this);
-
-            #if UNITY_ANDROID && !UNITY_EDITOR
-            if (AreNotificationsPresent()) {
-                ddnaNotifications = new Android.DDNANotifications();
-                ddnaNotifications.MarkUnityLoaded();
-            }
-            #endif
-        }
 
         /// <summary>
         /// Registers for push notifications.
@@ -91,18 +79,6 @@ namespace DeltaDNA
         /// deltaDNA notifications should be registered as a secondary (non-main)
         /// instance.</param>
         public void RegisterForPushNotifications(bool secondary = false) {
-            if (Application.platform == RuntimePlatform.Android && AreNotificationsPresent()) {
-                #if UNITY_ANDROID && !UNITY_EDITOR
-                try {
-                    ddnaNotifications.Register(
-                        new AndroidJavaClass("com.unity3d.player.UnityPlayer")
-                            .GetStatic<AndroidJavaObject>("currentActivity"),
-                        secondary);
-                } catch (AndroidJavaException e) {
-                    Logger.LogWarning("Failed to register for push notifications. Notifications may not be configured correctly. " + e.Message);
-                }
-                #endif
-            }
         }
 
         /// <summary>
@@ -110,70 +86,23 @@ namespace DeltaDNA
         /// </summary>
         public void UnregisterForPushNotifications()
         {
-            if (Application.platform == RuntimePlatform.Android && AreNotificationsPresent()) {
-                #if UNITY_ANDROID && !UNITY_EDITOR
-                DDNA.Instance.AndroidRegistrationID = null;
-                #endif
-            }
-        }
-
-        private bool AreNotificationsPresent() {
-            if (notificationsPresent == null) {
-                try {
-                    new AndroidJavaClass("com.deltadna.android.sdk.notifications.DDNANotifications");
-                    notificationsPresent = true;
-                } catch (AndroidJavaException) {
-                    notificationsPresent = false;
-                }
-            }
-
-            return (bool) notificationsPresent;
         }
 
         #region Native Bridge
 
         public void DidReceivePushNotification(string notification)
         {
-            var payload = MiniJSON.Json.Deserialize(notification) as Dictionary<string, object>;
-            payload["_ddCommunicationSender"] = "GOOGLE_NOTIFICATION";
 
-            if (payload["_ddLaunch"] as bool? ?? false) {
-                Logger.LogDebug("Did launch with Android push notification");
-
-                DDNA.Instance.RecordPushNotification(payload);
-
-                if (OnDidLaunchWithPushNotification != null) {
-                    OnDidLaunchWithPushNotification(notification);
-                }
-            } else {
-                Logger.LogDebug("Did receive Android push notification");
-
-                DDNA.Instance.RecordPushNotification(payload);
-
-                if (OnDidReceivePushNotification != null) {
-                    OnDidReceivePushNotification(notification);
-                }
-            }
         }
 
         public void DidRegisterForPushNotifications(string registrationId)
         {
-            Logger.LogDebug("Did register for Android push notifications: "+registrationId);
 
-            DDNA.Instance.AndroidRegistrationID = registrationId;
-
-            if (OnDidRegisterForPushNotifications != null) {
-                OnDidRegisterForPushNotifications(registrationId);
-            }
         }
 
         public void DidFailToRegisterForPushNotifications(string error)
         {
-            Logger.LogWarning("Did fail to register for Android push notifications: "+error);
 
-            if (OnDidFailToRegisterForPushNotifications != null) {
-                OnDidFailToRegisterForPushNotifications(error);
-            }
         }
 
         #endregion

@@ -38,8 +38,11 @@ public class GameConsole : MonoBehaviour {
         {
             console.RemoveRange(0, console.Count - numConsoleLines);
         }
-        textConsole.text = "";
-        console.ForEach(i => textConsole.text += i);
+        if (textConsole != null)
+        {
+            textConsole.text = "";
+            console.ForEach(i => textConsole.text += i);
+        }
     }
 
     // Show / Hide Info panel and Console when player clicks Info button.

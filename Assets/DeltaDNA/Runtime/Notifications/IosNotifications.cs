@@ -51,13 +51,14 @@ public class IosNotifications : MonoBehaviour
     public event Action<string> OnDidFailToRegisterForPushNotifications;
 
     void Awake()
-    {
+    {/*
         gameObject.name = this.GetType().ToString();
         DontDestroyOnLoad(this);
 
         #if UNITY_IOS && !UNITY_EDITOR
         _markUnityLoaded();
         #endif
+            */
     }
 
     /// <summary>
@@ -65,83 +66,32 @@ public class IosNotifications : MonoBehaviour
     /// </summary>
     public void RegisterForPushNotifications()
     {
-        if (Application.platform == RuntimePlatform.IPhonePlayer) {
-            #if UNITY_IPHONE
-            #if UNITY_4_5 || UNITY_4_6 || UNITY_4_7
-            NotificationServices.RegisterForRemoteNotificationTypes(
-                RemoteNotificationType.Alert |
-                RemoteNotificationType.Badge |
-                RemoteNotificationType.Sound);
-            #else
-            UnityEngine.iOS.NotificationServices.RegisterForNotifications(
-                UnityEngine.iOS.NotificationType.Alert |
-                UnityEngine.iOS.NotificationType.Badge |
-                UnityEngine.iOS.NotificationType.Sound);
-            #endif
-            #endif
-            }
-        }
+
+    }
 
     /// <summary>
     /// Unregisters for push notifications.
     /// </summary>
     public void UnregisterForPushNotifications()
     {
-        if (Application.platform == RuntimePlatform.IPhonePlayer) {
-            #if UNITY_IPHONE
-            #if UNITY_4_5 || UNITY_4_6 || UNITY_4_7
-            NotificationServices.UnregisterForRemoteNotifications();
-            #else
-            UnityEngine.iOS.NotificationServices.UnregisterForRemoteNotifications();
-            #endif
-            #endif
-            }
-        }
+
+    }
 
     #region Native Bridge
 
     public void DidReceivePushNotification(string notification)
     {
-        var payload = DeltaDNA.MiniJSON.Json.Deserialize(notification) as Dictionary<string, object>;
-        payload["_ddCommunicationSender"] = "APPLE_NOTIFICATION";
 
-        if (Convert.ToBoolean(payload["_ddLaunch"])) {
-            Logger.LogDebug("Did launch with iOS push notification");
-
-            DDNA.Instance.RecordPushNotification(payload);
-
-            if (OnDidLaunchWithPushNotification != null) {
-                OnDidLaunchWithPushNotification(notification);
-            }
-        } else {
-            Logger.LogDebug("Did receive iOS push notification");
-
-            DDNA.Instance.RecordPushNotification(payload);
-
-            if (OnDidReceivePushNotification != null) {
-                OnDidReceivePushNotification(notification);
-            }
-        }
     }
 
     public void DidRegisterForPushNotifications(string deviceToken)
     {
-        Logger.LogInfo("Did register for iOS push notifications: "+deviceToken);
 
-        DDNA.Instance.PushNotificationToken = deviceToken;
-
-        if (OnDidRegisterForPushNotifications != null) {
-            OnDidRegisterForPushNotifications(deviceToken);
-        }
     }
 
     public void DidFailToRegisterForPushNotifications(string error)
     {
-        Logger.LogWarning("Did fail to register for iOS push notifications: "+error);
 
-        if (OnDidFailToRegisterForPushNotifications != null) {
-            OnDidFailToRegisterForPushNotifications(error);
-        }
     }
 
     #endregion

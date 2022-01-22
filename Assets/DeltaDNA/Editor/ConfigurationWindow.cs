@@ -38,9 +38,7 @@ namespace DeltaDNA.Editor
         
         // config
         
-        private NotificationsConfigurator notifications;
-        private iOSConfiguration iOS;
-        
+      
         void OnEnable() {
             titleContent = new GUIContent(
                 "Configuration",
@@ -49,8 +47,6 @@ namespace DeltaDNA.Editor
             Load();
         }
 
-
-        
         void OnGUI() {
             // workaround for OnEnable weirdness when initialising values
             if (logo == null) logo = AssetDatabase.LoadAssetAtPath<Texture>(WindowHelper.FindFile("Editor/Resources/Logo.png"));
@@ -147,114 +143,18 @@ namespace DeltaDNA.Editor
             GUILayout.Space(WindowHelper.HEIGHT_SEPARATOR);
             
             EditorGUI.BeginChangeCheck();
-
-            foldoutAndroidNotifications = CreateFoldout(
-                foldoutAndroidNotifications,
-                "Android Notifications",
-                true,
-                styleFoldout);
-            if (foldoutAndroidNotifications) {
-                if (!AreAndroidNotificationsInProject()) {
-                    GUILayout.Label("Configuration not available due to notification dependencies not present in project.");
-                } else {
-                    notifications.appId = EditorGUILayout.TextField(
-                        new GUIContent(
-                            "Application ID",
-                            "Enter the Application ID for your application in the Firebase Console"),
-                        notifications.appId);
-                    notifications.senderId = EditorGUILayout.TextField(
-                        new GUIContent(
-                            "Sender ID",
-                            "Enter the Sender ID for your application in the Firebase Console"),
-                        notifications.senderId);
-                    notifications.projectId = EditorGUILayout.TextField(
-                        new GUIContent(
-                            "Project ID",
-                            "Enter the Project ID for your application in the Firebase Console"),
-                        notifications.projectId);
-                    notifications.apiKey = EditorGUILayout.TextField(
-                        new GUIContent(
-                            "Firebase API Key",
-                            "Enter the API Key for your application in the Firebase Console"),
-                        notifications.apiKey);
-                    notifications.listenerService = EditorGUILayout.TextField(
-                        new GUIContent(
-                            "Listener Service",
-                            "If you have your own implementation of the NotificationListenerService you should set the field to use your own class"),
-                        notifications.listenerService);
-                    
-                    notifications.notificationIcon = EditorGUILayout.TextField(
-                        new GUIContent(
-                            "Notification Icon",
-                            "The icon for the notification should be the name of the drawable resource, for example 'icon_notification' if you have 'icon_notification.png' in the 'res/drawable' folder"),
-                        notifications.notificationIcon);
-                    notifications.notificationTitle = EditorGUILayout.TextField(
-                        new GUIContent(
-                            "Notification Title",
-                            "The title should be the string literal that you would like to appear in the notification, or a localisable string resource from the 'res/values' folder such as '@string/resource_name'"),
-                        notifications.notificationTitle);
-                    
-                    if (GUILayout.Button("Apply Android Notification Settings"))
-                    {
-                        ApplyAndroidNotificationSettings();
-                    }
-                }
-            }
             
-            if (EditorGUI.EndChangeCheck())
-            {
-                if (AreAndroidNotificationsInProject()) {
-                    notifications.Apply();
-                    Debug.Log("[DeltaDNA] Changes have been applied to XML configuration files, please commit the updates to version control");
-                }
-            }
-
             GUILayout.Space(WindowHelper.HEIGHT_SEPARATOR);
 
 
-            foldoutiOSNotifications = CreateFoldout(
-                foldoutiOSNotifications,
-                "iOS Rich Push Notifications",
-                true,
-                styleFoldout);
-            if (foldoutiOSNotifications)
-            {
-#if UNITY_2019_3_OR_NEWER
-                DrawIOSRichPushNotificationSettings();
-#elif UNITY_2018_4_OR_NEWER || UNITY_2019_1 || UNITY_2019_2
-                EditorGUILayout.HelpBox("In order to support iOS Rich Push Notifications in this version of Unity, you must change the build system in the built XCode project to 'legacy' (File -> Project Settings -> Build System). This is done automatically in 2019.3 or newer.", MessageType.Warning);
-                DrawIOSRichPushNotificationSettings();
-#else
-                EditorGUILayout.HelpBox("iOS rich push notifications can only be used in Unity 2018.4 or newer; 2019.3 or newer is recommended.", MessageType.Warning);
-#endif
-            }
+
             
             EditorGUILayout.EndScrollView();
         }
 
-        private void DrawIOSRichPushNotificationSettings()
-        {
-            EditorGUI.BeginChangeCheck();
-            iOS.enableRichPushNotifications = EditorGUILayout.Toggle(
-                    new GUIContent(
-                        "Enable",
-                        "Tick this to enable rich push notifications in the iOS app"),
-                    iOS.enableRichPushNotifications);
-            iOS.pushNotificationServiceExtensionIdentifier = EditorGUILayout.TextField(
-                new GUIContent(
-                        "Extension Identifier",
-                        "This is the bundle identifier that will be given to the push notification service extension that is added to the XCode project"),
-                    iOS.pushNotificationServiceExtensionIdentifier);
-            if (EditorGUI.EndChangeCheck())
-            {
-                iOS.Save();
-                Debug.Log("[DeltaDNA] Changes have been applied to XML configuration files, please commit the updates to version control");
-            }
-        }
+
         
         private void Load() {
-            iOS = iOSConfiguration.Load();
-            notifications = new NotificationsConfigurator();
         }
 
         private static bool CreateFoldout(
@@ -270,10 +170,7 @@ namespace DeltaDNA.Editor
 #endif
         }
         
-        private static bool AreAndroidNotificationsInProject() 
-        {
-            return Directory.Exists(NotificationsConfigurator.NOTIFICATION_PATH);
-        }
+
 
         private SerializedObject GetSerializedConfig()
         {
@@ -297,90 +194,6 @@ namespace DeltaDNA.Editor
             return new SerializedObject(cfg);
         }
         
-        private void ApplyAndroidNotificationSettings()
-        {
-            // Ensure that all fields are filled in
-            if (
-                String.IsNullOrEmpty(notifications.apiKey)
-                || String.IsNullOrEmpty(notifications.appId)
-                || String.IsNullOrEmpty(notifications.projectId)
-                || String.IsNullOrEmpty(notifications.senderId)
-            )
-            {
-                Debug.LogError(
-                    "Some required information for Android notifications is missing from the deltaDNA configuration. " +
-                    "Please check these values are present: Application ID, Project ID, Sender ID and Firebase API Key." +
-                    "The notifications configuration has not been saved."
-                );
-                return;
-            }
-
-            try
-            {
-                CopyAndroidNotificationFolder();
-                CopyAndroidNotificationGradleFiles();
-                // Inform the user that the plugin has been correctly configured in their assets folder
-                Debug.Log(
-                    "deltaDNA Android notification setup complete. The configured plugin has been updated in your Assets/Plugins/Android folder"
-                );
-            }
-            catch (Exception e)
-            {
-                Debug.LogError("Failed to update the android notification configuration, changes have not been saved.");
-                Debug.LogError(e.Message);
-                Debug.LogError(e.StackTrace);
-            }
-            
-        }
-
-        private void CopyAndroidNotificationFolder()
-        {
-            string pluginFolder = NotificationsConfigurator.NOTIFICATION_PATH;
-            string pluginTargetPath = $"Plugins/Android/{NotificationsConfigurator.PLUGIN_FOLDER_NAME}.androidlib";
-            string assetPath = $"Assets/{pluginTargetPath}";
-            string targetFolder = $"{Application.dataPath}/{pluginTargetPath}";
-
-            AssetDatabase.DeleteAsset(assetPath);
-            if (Directory.Exists(targetFolder))
-            {
-                Directory.Delete(targetFolder, true);
-            }
-            DirectoryCopy(pluginFolder, targetFolder);
-            AssetDatabase.ImportAsset(assetPath);
-        }
-
-        private void CopyAndroidNotificationGradleFiles()
-        {
-            #if UNITY_2020_2_OR_NEWER
-            string gradleFileSuffix = "20202";
-            #else
-            string gradleFileSuffix = "20194";
-            #endif
-
-            CopyGradleFile("baseProjectTemplate.gradle", "baseProjectTemplate.gradle");
-            CopyGradleFile($"gradleTemplate{gradleFileSuffix}.properties", "gradleTemplate.properties");
-            CopyGradleFile($"mainTemplate{gradleFileSuffix}.gradle", "mainTemplate.gradle");
-        }
-
-        private static void CopyGradleFile(string fromFilename, string toFilename)
-        {
-            string sourceFolder = Path.GetFullPath(WindowHelper.FindDir("Runtime/Plugins/Android"));
-            string sourceFile = $"{sourceFolder}/{fromFilename}";
-            string targetPath = $"Plugins/Android/{toFilename}";
-            string targetFile = $"{Application.dataPath}/{targetPath}";
-            string assetTargetPath = $"Assets/{targetPath}";
-
-            if (File.Exists(targetFile))
-            {
-                Debug.Log(
-                    "An existing gradle template file was found when copying DeltaDNA notification files. " +
-                    "The template was not copied, but can be accessed and manually added from DeltaDNA/Runtime/Plugins/Android if required");
-                return;
-            }
-            AssetDatabase.DeleteAsset(assetTargetPath);
-            File.Copy(sourceFile, targetFile);
-            AssetDatabase.ImportAsset(assetTargetPath);
-        }
 
         // Adapted from https://docs.microsoft.com/en-us/dotnet/standard/io/how-to-copy-directories
         // as there was no inbuilt method to copy a directory recursively.

@@ -649,7 +649,7 @@ PlayerSettings:
   scriptingDefineSymbols:
     1: mopub_manager
     4: mopub_manager
-    7: mopub_manager;UNITY_ANALYTICS_EVENT_LOGS
+    7: mopub_manager;UNITY_ANALYTICS_EVENT_LOGS;DDNA_IOS_PUSH_NOTIFICATIONS_REMOVED
   platformArchitecture: {}
   scriptingBackend:
     Android: 1

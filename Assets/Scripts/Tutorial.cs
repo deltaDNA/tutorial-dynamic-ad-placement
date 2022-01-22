@@ -60,6 +60,14 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         DDNA.Instance.NotifyOnSessionConfigured(true);
         DDNA.Instance.OnSessionConfigured += (bool cachedConfig) => GetGameConfig(cachedConfig);
 
+        DDNA.Instance.AndroidNotifications.OnDidRegisterForPushNotifications += (string n) =>
+        {
+            Debug.Log("Got an Android registration token: " + n);
+        };
+
+        DDNA.Instance.IosNotifications.OnDidRegisterForPushNotifications += (string n) => {
+            Debug.Log("Got an iOS push token: " + n);
+        };
 
         // Allow multiple game parameter actions callbacks from a single event trigger        
         DDNA.Instance.Settings.MultipleActionsForEventTriggerEnabled = true;

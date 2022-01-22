@@ -124,7 +124,7 @@ namespace DeltaDNA
                 } else {
                     delegated = new DDNAImpl(this);
                 }
-
+                
                 // attach additional behaviours as children of this gameObject
                 #if !DDNA_IOS_PUSH_NOTIFICATIONS_REMOVED
                 GameObject iosNotificationsObject = new GameObject();
@@ -135,6 +135,7 @@ namespace DeltaDNA
                 GameObject androidNotificationsObject = new GameObject();
                 AndroidNotifications = androidNotificationsObject.AddComponent<AndroidNotifications>();
                 androidNotificationsObject.transform.parent = gameObject.transform;
+                
             }
         }
 
@@ -553,12 +554,12 @@ namespace DeltaDNA
         /// </summary>
         public AndroidNotifications AndroidNotifications { get; private set; }
 
-        #if !DDNA_IOS_PUSH_NOTIFICATIONS_REMOVED
+       
         /// <summary>
         /// Helper for iOS push notifications.
         /// </summary>
         public IosNotifications IosNotifications { get; private set; }
-        #endif
+       
 
         /// <summary>
         /// The EngageFactory helps with using the Engage service.
