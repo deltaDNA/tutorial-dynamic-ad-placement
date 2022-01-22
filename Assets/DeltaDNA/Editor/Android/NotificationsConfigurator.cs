@@ -20,7 +20,7 @@ using System.Xml.Linq;
 using UnityEditor;
 
 namespace DeltaDNA.Editor {
-    /*
+
     [InitializeOnLoad]
     public sealed class NotificationsConfigurator {
 
@@ -355,5 +355,5 @@ namespace DeltaDNA.Editor {
             }
             manifest.Save(MANIFEST_XML_PATH);
         }
-    }*/
+    }
 }

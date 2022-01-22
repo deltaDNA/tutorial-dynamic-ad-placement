@@ -131,10 +131,10 @@ namespace DeltaDNA
                 IosNotifications = iosNotificationsObject.AddComponent<IosNotifications>();
                 iosNotificationsObject.transform.parent = gameObject.transform;
                 #endif
-                /*
+
                 GameObject androidNotificationsObject = new GameObject();
                 AndroidNotifications = androidNotificationsObject.AddComponent<AndroidNotifications>();
-                androidNotificationsObject.transform.parent = gameObject.transform;*/
+                androidNotificationsObject.transform.parent = gameObject.transform;
             }
         }
 
@@ -551,7 +551,7 @@ namespace DeltaDNA
         /// <summary>
         /// Helper for Android push notifications.
         /// </summary>
-        //public AndroidNotifications AndroidNotifications { get; private set; }
+        public AndroidNotifications AndroidNotifications { get; private set; }
 
         #if !DDNA_IOS_PUSH_NOTIFICATIONS_REMOVED
         /// <summary>
