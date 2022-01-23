@@ -3,31 +3,22 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using DeltaDNA;
-using UnityEngine.Advertisements;
 using Unity.Services.Analytics;
 using Unity.Services.Core;
 using Unity.Services.Core.Analytics;
 
-public class Tutorial : MonoBehaviour, IUnityAdsListener
+public class Tutorial : MonoBehaviour
 {
     public GameManager gameManager;
     
-    // Unit Ads
-    [Header("Unity Ads")]
-    public string unityAdsGameId = "3802209";
-    public bool unityAdsTestMode = false;
-    public string unityAdsPlacementId = "dynamic_placement";
-
     // Mopub Ads
     [Header("MoPub Ads")]
     public string[] _rewardedAdUnits = { "920b6145fb1546cf8b5cf2ac34638bb7" };
     public bool isMoPubAdLoaded = false;
 
-
     // Properties
     [Header("Properties")]
     public bool isMoPubAdsEnabled = false;
-    public bool isUnityAdsEnabled = true;
     
     private int adRewardValue;
 
@@ -36,15 +27,10 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
     bool isOptInConsentRequired;
 
 
-    async void Awake()
-    {
-
-    }
     // Start is called before the first frame update
     async void Start()
     {
         // Congifure Enabled Ad Networks
-        if (isUnityAdsEnabled) ConfigureUnityAds();
         if (isMoPubAdsEnabled) ConfigureMoPubAds();
 
 
@@ -184,14 +170,9 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
                 {
                     adProvider = gameParameters["adProvider"].ToString();
                 }
-
                 
                 // Rewarded Ad display controlled by Engage "adShow" game parameter
-                if (isUnityAdsEnabled && (adProvider == "ANY" || adProvider == "UNITY"))
-                {
-                    UnityShowRewardedAd();
-                }
-                else if (isMoPubAdsEnabled && (adProvider == "ANY" || adProvider == "MOPUB"))
+                if (isMoPubAdsEnabled && (adProvider == "ANY" || adProvider == "MOPUB"))
                 {
                     MoPubShowRewardedAd();
                 }
@@ -218,77 +199,6 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         // --------------------------------------------------------------------------------------------
 
     }
-
-    #region UnityAds
-    /// <summary>
-    /// Unity Ads Stuff
-    /// </summary>
-    /// 
-
-    public void ConfigureUnityAds()
-    {
-        // Unity Ads Configuration
-        
-        Advertisement.AddListener(this);
-        Advertisement.Initialize(unityAdsGameId, unityAdsTestMode);
-    }
-
-    public void UnityShowRewardedAd()
-    {
-        
-        // Send the deltaDNA userID to Unity Ads to
-        // recveive adRevenue event bacm in DDNA
-        ShowOptions options = new ShowOptions();
-        options.gamerSid = DDNA.Instance.UserID;
-
-        // Send deltaDNA SessionID to Unity Ads to 
-        // attribute adRevenue to correct player session.
-        MetaData metaData = new MetaData("DDNA");
-        metaData.Set("sessionID", DDNA.Instance.SessionID);
-        metaData.Set("collectURL", DDNA.Instance.CollectURL);
-        metaData.Set("environmentKey", DDNA.Instance.EnvironmentKey);
-        
-        Advertisement.SetMetaData(metaData);
-
-        // Show Unity Ad
-        Advertisement.Show(unityAdsPlacementId, options);
-        Debug.Log("Showing Unity Ad version + " + Advertisement.version);
-    }
-
-    // Unity Ads Listeners
-    public void OnUnityAdsReady(string placementId)
-    {
-        Debug.Log("Unity Ad Ready for PlacementID: " + placementId);
-    }
-    public void OnUnityAdsDidError(string message)
-    {
-        Debug.Log("Unity Ads Error: " + message);
-    }
-    public void OnUnityAdsDidStart(string placementId)
-    {
-        Debug.Log("Unity Ad Started for PlacementID: " + placementId);
-    }
-    public void OnUnityAdsDidFinish(string placementId, ShowResult showResult)
-    {
-        bool isAdFinished = false;
-
-        if (showResult == ShowResult.Finished)
-        {
-            isAdFinished = true;
-            gameManager.ReceiveCurrency(adRewardValue);
-
-        }
-
-        GameEvent adEvent = new GameEvent("adImpression")
-                .AddParam("adCompletionStatus", isAdFinished ? "COMPLETED" : "INCOMPLETE")
-                .AddParam("adProvider", "Unity Ads")
-                .AddParam("placementType", "REWARDED AD")
-                .AddParam("placementId", placementId)
-                .AddParam("placementType", placementId);
-
-        DDNA.Instance.RecordEvent(adEvent).Run();
-    }
-    #endregion
 
     #region MoPubAds
     /// <summary>

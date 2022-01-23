@@ -2,13 +2,14 @@
   "dependencies": {
     "com.unity.2d.sprite": "1.0.0",
     "com.unity.2d.tilemap": "1.0.0",
-    "com.unity.ads": "3.5.2",
     "com.unity.analytics": "3.3.5",
     "com.unity.collab-proxy": "1.2.16",
     "com.unity.ide.rider": "1.1.4",
     "com.unity.ide.vscode": "1.2.3",
     "com.unity.multiplayer-hlapi": "1.0.6",
     "com.unity.purchasing": "2.2.1",
+    "com.unity.services.analytics": "3.0.0-pre.2",
+    "com.unity.services.authentication": "1.0.0-pre.37",
     "com.unity.test-framework": "1.1.20",
     "com.unity.textmeshpro": "2.0.1",
     "com.unity.timeline": "1.2.10",
@@ -44,9 +45,7 @@
     "com.unity.modules.video": "1.0.0",
     "com.unity.modules.vr": "1.0.0",
     "com.unity.modules.wind": "1.0.0",
-    "com.unity.modules.xr": "1.0.0",
-    "com.unity.services.analytics": "3.0.0-pre.2",
-    "com.unity.services.authentication": "1.0.0-pre.37"
+    "com.unity.modules.xr": "1.0.0"
   },
   "scopedRegistries": [
     {
