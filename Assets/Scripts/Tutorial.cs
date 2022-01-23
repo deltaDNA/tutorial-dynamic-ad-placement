@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-// Todo using DeltaDNA;
+using DeltaDNA;
 using Unity.Services.Analytics;
 using Unity.Services.Core;
 using Unity.Services.Core.Analytics;
@@ -23,10 +23,10 @@ public class Tutorial : MonoBehaviour
     async void Start()
     {
 
-        /* Todo
+        
         DDNA.Instance.SetLoggingLevel(DeltaDNA.Logger.Level.DEBUG);
         DDNA.Instance.StartSDK();
-        */
+       
         // Start UGS SDK
         try
         {
