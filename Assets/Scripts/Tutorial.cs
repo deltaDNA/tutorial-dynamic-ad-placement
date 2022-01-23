@@ -23,19 +23,11 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
     public string[] _rewardedAdUnits = { "920b6145fb1546cf8b5cf2ac34638bb7" };
     public bool isMoPubAdLoaded = false;
 
-    //IronSourceAds
-    [Header("IronSource Ads")]
-    public string appKey = "bb0c340d"; //"85460dcd";
-    private IronSourcePlacement ironSourceSsp = null;
-    private IronSourceImpressionData ironSourceImpressionData = null;
-    private string ironSourceCompletionStatus = "INCOMPLETE" ;
 
     // Properties
     [Header("Properties")]
     public bool isMoPubAdsEnabled = false;
     public bool isUnityAdsEnabled = true;
-    public bool isIronSourceAdsEnabled = false;
-    public bool isApplovinMaxAdsEnabled = false; 
     
     private int adRewardValue;
 
@@ -54,7 +46,6 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         // Congifure Enabled Ad Networks
         if (isUnityAdsEnabled) ConfigureUnityAds();
         if (isMoPubAdsEnabled) ConfigureMoPubAds();
-        if (isIronSourceAdsEnabled) ConfigureIronSourceAds();
 
 
         // Hook up callback to fire when DDNA SDK has received session config info, including Event Triggered campaigns.
@@ -124,14 +115,6 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         catch (ConsentCheckException e)
         {
             // Handle the exception by checking e.Reason
-        }
-    }
-    void OnApplicationPause(bool isPaused)
-    {
-        if (isIronSourceAdsEnabled)
-        {
-            Debug.Log("unity-script: OnApplicationPause = " + isPaused);
-            IronSource.Agent.onApplicationPause(isPaused);
         }
     }
 
@@ -212,11 +195,6 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
                 {
                     MoPubShowRewardedAd();
                 }
-                else if (isIronSourceAdsEnabled && (adProvider == "ANY" || adProvider == "IRONSOURCE"))
-                {
-                    IronSourceShowRewardedAd();
-                }
-
 
                 // Rewarded Ad Value controlled by Engage "adRewardValue" game parameter                               
                 if (gameParameters.ContainsKey("adRewardValue"))
@@ -382,122 +360,5 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         DDNA.Instance.RecordEvent(adEvent).Run();
     }
     #endregion
-
-    #region IronSourceAds
-    public void ConfigureIronSourceAds()
-    {
-        Debug.Log("unity-script: IronSource.Agent.validateIntegration");
-        IronSource.Agent.validateIntegration();
-
-        Debug.Log("unity-script: unity version" + IronSource.unityVersion());
-
-        // SDK init
-        Debug.Log("unity-script: IronSource.Agent.init");
-        IronSource.Agent.init(appKey);
-
-        // IronSource Imprssion Data with Revenue Callback
-        IronSourceEvents.onImpressionSuccessEvent += ImpressionSuccessEvent;
-
-        //Add Rewarded Video Events
-        IronSourceEvents.onRewardedVideoAdOpenedEvent += RewardedVideoAdOpenedEvent;
-        IronSourceEvents.onRewardedVideoAdClosedEvent += RewardedVideoAdClosedEvent;
-        IronSourceEvents.onRewardedVideoAvailabilityChangedEvent += RewardedVideoAvailabilityChangedEvent;
-        IronSourceEvents.onRewardedVideoAdStartedEvent += RewardedVideoAdStartedEvent;
-        IronSourceEvents.onRewardedVideoAdEndedEvent += RewardedVideoAdEndedEvent;
-        IronSourceEvents.onRewardedVideoAdRewardedEvent += RewardedVideoAdRewardedEvent;
-        IronSourceEvents.onRewardedVideoAdShowFailedEvent += RewardedVideoAdShowFailedEvent;
-        IronSourceEvents.onRewardedVideoAdClickedEvent += RewardedVideoAdClickedEvent;
-    }
-
-
-    public void IronSourceShowRewardedAd()
-    {
-        Debug.Log("Showing IronSource Ad");
-        if (IronSource.Agent.isRewardedVideoAvailable())
-        {
-            IronSource.Agent.showRewardedVideo();
-        }
-        else
-        {
-            Debug.Log("unity-script: IronSource.Agent.isRewardedVideoAvailable - False");
-        }
-    }
-
-    #region RewardedAd callback handlers
-
-    void RewardedVideoAvailabilityChangedEvent(bool canShowAd)
-    {
-        Debug.Log("unity-script: I got RewardedVideoAvailabilityChangedEvent, value = " + canShowAd);
-    }
-
-    void RewardedVideoAdOpenedEvent()
-    {
-        Debug.Log("unity-script: I got RewardedVideoAdOpenedEvent");
-        ironSourceCompletionStatus = "INCOMPLETE";
-    }
-
-    void RewardedVideoAdRewardedEvent(IronSourcePlacement ssp)
-    {
-        Debug.Log("unity-script: I got RewardedVideoAdRewardedEvent, amount = " + ssp.getRewardAmount() + " name = " + ssp.getRewardName());
-        ironSourceCompletionStatus = "COMPLETED";
-        ironSourceSsp = ssp; 
-        gameManager.ReceiveCurrency(adRewardValue);
-    }
-
-    void RewardedVideoAdClosedEvent()
-    {
-        Debug.Log("unity-script: I got RewardedVideoAdClosedEvent");
-
-        if (ironSourceSsp != null)
-        {
-            // The impression data from MoPub does contain additional parameters that haven't been added 
-            // to the adImpression event in this example, but it you could extend this event in the Event Manager tool to accomodate them.
-            //Debug.Log("Impression Data" + impressionData.JsonRepresentation.ToString());
-
-            Debug.Log("Recording adImpression event");
-
-            GameEvent adEvent = new GameEvent("adImpression")
-             .AddParam("adProvider", "IronSource ")
-             .AddParam("placementType", "REWARDED AD")
-             .AddParam("placementId", ironSourceSsp.getPlacementName())
-             .AddParam("placementName", ironSourceSsp.getPlacementName())
-             .AddParam("adCompletionStatus", ironSourceCompletionStatus);
-            
-            // Add impression value if available. Multiplying publisher revenue by 1000 to get CPM value
-            if (ironSourceImpressionData != null) adEvent.AddParam("adEcpmUsd", System.Convert.ToDouble(ironSourceImpressionData.revenue) * 1000);
-
-            DDNA.Instance.RecordEvent(adEvent).Run();
-            ironSourceSsp = null;
-            ironSourceImpressionData = null; 
-        }
-    }
-
-    void RewardedVideoAdStartedEvent()
-    {
-        Debug.Log("unity-script: I got RewardedVideoAdStartedEvent");
-    }
-
-    void RewardedVideoAdEndedEvent()
-    {
-        Debug.Log("unity-script: I got RewardedVideoAdEndedEvent");
-    }
-
-    void RewardedVideoAdShowFailedEvent(IronSourceError error)
-    {
-        Debug.Log("unity-script: I got RewardedVideoAdShowFailedEvent, code :  " + error.getCode() + ", description : " + error.getDescription());
-    }
-
-    void RewardedVideoAdClickedEvent(IronSourcePlacement ssp)
-    {
-        Debug.Log("unity-script: I got RewardedVideoAdClickedEvent, name = " + ssp.getRewardName());
-    }
-
-    private void ImpressionSuccessEvent(IronSourceImpressionData impressionData)
-    {
-        Debug.Log("unity-script:  --=== ImpressionSuccessEvent ===-- impressionData = " + impressionData);
-        ironSourceImpressionData = impressionData;       
-    }
-    #endregion IronSource Callback Handlers
-    #endregion IronSource
 
 }
