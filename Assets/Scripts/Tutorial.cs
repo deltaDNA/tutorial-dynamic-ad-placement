@@ -47,6 +47,7 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
     // Start is called before the first frame update
     async void Start()
     {
+        
         // Start UGS Analytics
         await UnityServices.InitializeAsync();
 
@@ -59,7 +60,7 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         // Hook up callback to fire when DDNA SDK has received session config info, including Event Triggered campaigns.
         DDNA.Instance.NotifyOnSessionConfigured(true);
         DDNA.Instance.OnSessionConfigured += (bool cachedConfig) => GetGameConfig(cachedConfig);
-
+        /*
         DDNA.Instance.AndroidNotifications.OnDidRegisterForPushNotifications += (string n) =>
         {
             Debug.Log("Got an Android registration token: " + n);
@@ -68,7 +69,9 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         DDNA.Instance.IosNotifications.OnDidRegisterForPushNotifications += (string n) => {
             Debug.Log("Got an iOS push token: " + n);
         };
-
+        DDNA.Instance.IosNotifications.RegisterForPushNotifications();
+        DDNA.Instance.AndroidNotifications.RegisterForPushNotifications();
+        */
         // Allow multiple game parameter actions callbacks from a single event trigger        
         DDNA.Instance.Settings.MultipleActionsForEventTriggerEnabled = true;
 

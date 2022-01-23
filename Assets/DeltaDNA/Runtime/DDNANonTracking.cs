@@ -57,7 +57,7 @@ namespace DeltaDNA {
         override internal void StopSDK() {
             started = false;
         }
-
+        
         override internal EventAction RecordEvent<T>(T gameEvent) {
             return EventAction.CreateEmpty(gameEvent as GameEvent);
         }
@@ -69,7 +69,7 @@ namespace DeltaDNA {
         override internal EventAction RecordEvent(string eventName, Dictionary<string, object> eventParams) {
             return RecordEvent(new GameEvent(eventName));
         }
-
+        
         override internal void RequestEngagement(Engagement engagement, Action<Dictionary<string, object>> callback) {
             callback(new JSONObject());
         }

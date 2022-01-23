@@ -22,6 +22,7 @@ using System.Globalization;
 using System.Linq;
 using UnityEngine;
 
+
 namespace DeltaDNA {
 
     using JSONObject = Dictionary<string, object>;
@@ -157,8 +158,9 @@ namespace DeltaDNA {
                 Logger.LogDebug("SDK not running");
             }
         }
-
+        
         override internal EventAction RecordEvent<T>(T gameEvent) {
+
             if (!started) {
                 throw new Exception("You must first start the SDK via the StartSDK method");
             } else if (whitelistEvents.Count != 0 && !whitelistEvents.Contains(gameEvent.Name)) {
@@ -187,7 +189,7 @@ namespace DeltaDNA {
             } catch (Exception ex) {
                 Logger.LogWarning("Unable to generate JSON for '"+gameEvent.Name+"' event. "+ex.Message);
             }
-
+            
             return new EventAction(
                 gameEvent as GameEvent,
                 eventTriggers.ContainsKey(gameEvent.Name)
@@ -206,7 +208,7 @@ namespace DeltaDNA {
             }
             return RecordEvent(gameEvent);
         }
-
+    
         override internal void RequestEngagement(Engagement engagement, Action<Dictionary<string, object>> callback) {
             if (!DDNA.Instance.consentTracker.HasCheckedForConsent())
             {
