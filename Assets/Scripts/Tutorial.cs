@@ -4,12 +4,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using DeltaDNA;
 using UnityEngine.Advertisements;
-
+using Unity.Services.Analytics;
+using Unity.Services.Core;
+using Unity.Services.Core.Analytics;
 
 public class Tutorial : MonoBehaviour, IUnityAdsListener
 {
     public GameManager gameManager;
-
+    
     // Unit Ads
     [Header("Unity Ads")]
     public string unityAdsGameId = "3802209";
@@ -43,8 +45,17 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
     
     private int adRewardValue;
 
+
+    string consentIdentifier;
+    bool isOptInConsentRequired;
+
+
+    async void Awake()
+    {
+
+    }
     // Start is called before the first frame update
-    void Start()
+    async void Start()
     {
         // Congifure Enabled Ad Networks
         if (isUnityAdsEnabled) ConfigureUnityAds();
@@ -74,8 +85,53 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
 
         DDNA.Instance.SetLoggingLevel(DeltaDNA.Logger.Level.DEBUG);
         DDNA.Instance.StartSDK();
+
+
+        try
+        {
+            var options = new InitializationOptions();
+            options.SetOption("Environment", "production");
+            options.SetAnalyticsUserId(DDNA.Instance.UserID);
+
+            await UnityServices.InitializeAsync(options);
+            List<string> consentIdentifiers = await Events.CheckForRequiredConsents();
+            if (consentIdentifiers.Count > 0)
+            {
+                consentIdentifier = consentIdentifiers[0];
+                isOptInConsentRequired = consentIdentifier == "pipl";
+
+                if (isOptInConsentRequired)
+                    CheckUserConsent();
+            }
+        }
+        catch (ConsentCheckException e)
+        {
+            Debug.Log("Something went wring with GeoIP consent check : " + e.Reason);
+        }
+
     }
 
+    public void CheckUserConsent()
+    {
+        try
+        {
+            if (isOptInConsentRequired)
+            {
+                // Show a PIPL consent flow
+                // ...
+
+                // If consent is provided for both use and export
+                Events.ProvideOptInConsent(consentIdentifier, true);
+
+                // If consent is not provided
+                Events.ProvideOptInConsent(consentIdentifier, false);
+            }
+        }
+        catch (ConsentCheckException e)
+        {
+            // Handle the exception by checking e.Reason
+        }
+    }
     void OnApplicationPause(bool isPaused)
     {
         if (isIronSourceAdsEnabled)
