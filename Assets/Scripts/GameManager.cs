@@ -246,7 +246,6 @@ public class GameManager : MonoBehaviour
 
 
             // Record MissionStarted event
-            
             GameEvent missionStarted = new GameEvent("missionStarted")
                 .AddParam("missionID", game.currentLevel.ToString())
                 .AddParam("missionName", string.Format("Mission {0}", game.currentLevel))
@@ -256,7 +255,7 @@ public class GameManager : MonoBehaviour
 
             DDNA.Instance.RecordEvent(missionStarted).Run();
             
-        } // TODO add condition for not enough funds later
+        } 
             
     }
 

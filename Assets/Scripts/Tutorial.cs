@@ -31,8 +31,12 @@ public class Tutorial : MonoBehaviour
         try
         {
             var options = new InitializationOptions();
-            options.SetOption("Environment", "production");
-            options.SetAnalyticsUserId(DDNA.Instance.UserID);
+            options.SetOption("Environment", "a9b7b85d-33ec-494b-bca5-8f699709207a");
+            if (!string.IsNullOrEmpty(DDNA.Instance.UserID))
+            {
+                Debug.Log("Old DDNA UserID = " + DDNA.Instance.UserID); 
+                options.SetAnalyticsUserId(DDNA.Instance.UserID);
+            }
 
             await UnityServices.InitializeAsync(options);
             List<string> consentIdentifiers = await Events.CheckForRequiredConsents();
