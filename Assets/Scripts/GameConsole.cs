@@ -33,13 +33,16 @@ public class GameConsole : MonoBehaviour {
 
     private void PrintToConsole(string logString, string stackTrace, LogType type)
     {
-        console.Add(string.Format("{0}::{1}\n", System.DateTime.Now.ToString("h:mm:ss tt"), logString));
-        if (console.Count > numConsoleLines)
+        if (textConsole != null)
         {
-            console.RemoveRange(0, console.Count - numConsoleLines);
+            console.Add(string.Format("{0}::{1}\n", System.DateTime.Now.ToString("h:mm:ss tt"), logString));
+            if (console.Count > numConsoleLines)
+            {
+                console.RemoveRange(0, console.Count - numConsoleLines);
+            }
+            textConsole.text = "";
+            console.ForEach(i => textConsole.text += i);
         }
-        textConsole.text = "";
-        console.ForEach(i => textConsole.text += i);
     }
 
     // Show / Hide Info panel and Console when player clicks Info button.
