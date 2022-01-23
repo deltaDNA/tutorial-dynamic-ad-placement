@@ -21,8 +21,9 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
-using DeltaDNA.Consent;
 using UnityEngine;
+using Unity.Services.Analytics;
+using Unity.Services.Core;
 
 namespace DeltaDNA
 {
@@ -48,22 +49,6 @@ namespace DeltaDNA
 
         private static object _lock = new object();
 
-        // Need to lazily initialise consent tracker as it reads its previous state from PlayerPrefs
-        // and we can't do that in a Monobehaviour property initializer
-        private ConsentTracker m_consentTracker;
-        internal ConsentTracker consentTracker
-        {
-            get
-            {
-                if (m_consentTracker == null)
-                {
-                    m_consentTracker = new ConsentTracker();
-                }
-
-                return m_consentTracker;
-            }
-        }
-
         public event Action OnNewSession;
         /// <summary>
         /// Will be called when the session configuration will be successfully
@@ -85,7 +70,7 @@ namespace DeltaDNA
         /// </summary>
         public event Action<string> OnImageCachingFailed;
 
-        private DDNABase delegated;
+       // private DDNABase delegated;
         private string collectURL;
         private string engageURL;
 
@@ -94,114 +79,43 @@ namespace DeltaDNA
         }
 
         void OnEnable() {
-            #if UNITY_5_OR_NEWER
-            Application.logMessageReceived += Logger.HandleLog;
-            #endif
+
         }
 
         void OnDisable() {
-            #if UNITY_5_OR_NEWER
-            Application.logMessageReceived -= Logger.HandleLog;
-            #endif
-            if (Settings.SendGameRunningEveryMinute)
-            {
-                if (isGameRunningCoroutineRunning)
-                {
-                    StopCoroutine(gameRunningEventCoroutine);
-                    isGameRunningCoroutineRunning = false;
-                }
-            }
+
         }
 
         internal void Awake() {
             lock (_lock) {
+                // Todo re-implement UGS privacy to ensure opted out players don't get re-enabled
                 if (PlayerPrefs.HasKey(PF_KEY_FORGET_ME)
                     || PlayerPrefs.HasKey(PF_KEY_FORGOTTEN)
-                    || PlayerPrefs.HasKey(PF_KEY_STOP_TRACKING_ME)
-                    || consentTracker.IsConsentDenied()
+                    || PlayerPrefs.HasKey(PF_KEY_STOP_TRACKING_ME)                    
                     ) {
-                    delegated = new DDNANonTracking(this);
+                    //delegated = new DDNANonTracking(this);
                 } else {
-                    delegated = new DDNAImpl(this);
+                    //delegated = new DDNAImpl(this);
                 }
-
-                // attach additional behaviours as children of this gameObject
-                #if !DDNA_IOS_PUSH_NOTIFICATIONS_REMOVED
-                GameObject iosNotificationsObject = new GameObject();
-                IosNotifications = iosNotificationsObject.AddComponent<IosNotifications>();
-                iosNotificationsObject.transform.parent = gameObject.transform;
-                #endif
-
-                GameObject androidNotificationsObject = new GameObject();
-                AndroidNotifications = androidNotificationsObject.AddComponent<AndroidNotifications>();
-                androidNotificationsObject.transform.parent = gameObject.transform;
             }
         }
 
         #region Client Interface
 
-        /// <summary>
-        /// Checks if any PIPL user consents are required before sending data from the device.
-        /// This method must be called before starting the SDK.
-        ///
-        /// The callback parameter will be true if consent needs to be checked, and false if either
-        /// consent has previously been gathered, or if consent is not required in the user's current
-        /// location.
-        /// </summary>
         public void IsPiplConsentRequired(Action<bool> callback)
         {
-            StartCoroutine(consentTracker.IsPiplConsentFlowRequired(delegate(bool isRequired)
-            {
-                if (delegated.HasStarted && !isRequired)
-                {
-                    RequestSessionConfiguration();
-                }
-
-                callback(isRequired);
-            }));
         }
-        
-        /// <summary>
-        /// Registers a user's consent (or lack of consent) to have their data used and / or exported
-        /// under PIPL legislation. Call isPiplConsentRequired first to check if this method is needed
-        /// or not.
-        /// </summary>
         public void SetPiplConsent(bool dataUse, bool dataExport)
         {
-            if (!dataUse || !dataExport)
-            {
-                delegated.ClearAllEvents();
-                ForgetMe();
-            }
-            else
-            {
-                if (delegated.HasStarted)
-                {
-                    // Have to re-request session configuration here as it will have failed previously.
-                    RequestSessionConfiguration();
-                }
-            }
-
-            consentTracker.SetUserPiplExportConsent(dataExport);
-            consentTracker.SetUserPiplUseConsent(dataUse);
         }
         
-        /// <summary>
-        /// Starts the SDK.  Call before sending events or making engagements.  The SDK will
-        /// generate a new user id if this is the first run.
-        /// </summary>
+
         public void StartSDK() {
             StartSDK((string) null);
         }
 
-        /// <summary>
-        /// Starts the SDK.  Call before sending events or making engagements.
-        /// </summary>
-        /// <param name="userID">The user id for the player, if set to null we create one for you.</param>
         public void StartSDK(string userID) {
-            Configuration config = Configuration.GetAssetInstance();
 
-            StartSDK(config, userID);
         }
 
         /// <summary>
@@ -224,10 +138,6 @@ namespace DeltaDNA
         /// <param name="userID">The user id for the player, if set to null we create one for you.</param>
         public void StartSDK(Configuration config, string userID) {
             lock (_lock) {
-                if (!consentTracker.HasCheckedForConsent())
-                {
-                    Debug.LogWarning("Since v6.0.0, the deltaDNA SDK requires you check if user consent is required in their current jurisdiction before events will be sent. Please check for user consent using IsPiplConsentRequired in order to resume event sending.");
-                }
                 
                 bool newPlayer = false;
                 if (String.IsNullOrEmpty(UserID)) {         // first time!
@@ -249,51 +159,15 @@ namespace DeltaDNA
                     Logger.LogInfo("Starting DDNA SDK with existing user " + UserID);
                 }
 
-                EnvironmentKey = (config.environmentKey == 0)
-                    ? config.environmentKeyDev
-                    : config.environmentKeyLive;
-                CollectURL = config.collectUrl;
-                EngageURL = config.engageUrl;
-                if (Platform == null) {
-                    Platform = ClientInfo.Platform;
-                }
+               
 
-                if (!string.IsNullOrEmpty(config.hashSecret)) {
-                    HashSecret = config.hashSecret;
-                }
-                if (config.useApplicationVersion) {
-                    ClientVersion = Application.version;
-                } else if (!string.IsNullOrEmpty(config.clientVersion)) {
-                    ClientVersion = config.clientVersion;
-                }
 
-                if (newPlayer) {
-                    PlayerPrefs.DeleteKey(PF_KEY_FIRST_SESSION);
-                    PlayerPrefs.DeleteKey(PF_KEY_LAST_SESSION);
-                    PlayerPrefs.DeleteKey(PF_KEY_CROSS_GAME_USER_ID);
 
-                    if (delegated is DDNANonTracking) {
-                        PlayerPrefs.DeleteKey(PF_KEY_FORGET_ME);
-                        PlayerPrefs.DeleteKey(PF_KEY_FORGOTTEN);
-                        PlayerPrefs.DeleteKey(PF_KEY_STOP_TRACKING_ME);
 
-                        delegated = new DDNAImpl(this);
-                    }
-                }
-
-                delegated.StartSDK(newPlayer);
             }
         }
 
-        internal IEnumerator GameHeartbeat(float numSeconds)
-        {
-            isGameRunningCoroutineRunning = true;
-            yield return new WaitForSecondsRealtime(numSeconds);
-            delegated.RecordGameRunningEvent();
-            gameRunningEventCoroutine = GameHeartbeat(gameRunningEventInterval);
-            isGameRunningCoroutineRunning = false;
-            StartCoroutine(gameRunningEventCoroutine);
-        }
+
 
         /// <summary>
         /// Starts the SDK.  Call before sending events or making engagements.  The SDK will
@@ -323,30 +197,14 @@ namespace DeltaDNA
         /// Changes the session ID for the current User.
         /// </summary>
         public void NewSession() {
-            string sessionID = GenerateSessionID();
-            Logger.LogInfo("Starting new session "+sessionID);
-            SessionID = sessionID;
 
-            RequestSessionConfiguration();
-            if (!PlayerPrefs.HasKey(PF_KEY_FIRST_SESSION)) {
-                PlayerPrefs.SetString(
-                    PF_KEY_FIRST_SESSION,
-                    DateTime.UtcNow.ToString(Settings.EVENT_TIMESTAMP_FORMAT, CultureInfo.InvariantCulture));
-            }
-            PlayerPrefs.SetString(
-                PF_KEY_LAST_SESSION,
-                DateTime.UtcNow.ToString(Settings.EVENT_TIMESTAMP_FORMAT, CultureInfo.InvariantCulture));
-
-            if (OnNewSession != null) OnNewSession();
         }
 
         /// <summary>
         /// Sends a 'gameEnded' event to Collect, disables background uploads.
         /// </summary>
         public void StopSDK() {
-            lock (_lock) {
-                delegated.StopSDK();
-            }
+
         }
 
         /// <summary>
@@ -356,7 +214,12 @@ namespace DeltaDNA
         /// <returns><see cref="EventAction"/> for this event</returns>
         /// <exception cref="System.Exception">Thrown if the SDK has not been started.</exception>
         public EventAction RecordEvent<T>(T gameEvent) where T : GameEvent<T> {
-            return delegated.RecordEvent(gameEvent);
+
+            // Pass event through to UGS SDK
+            Events.CustomData(gameEvent.Name, gameEvent.AsDictionary());
+
+            return EventAction.CreateEmpty(gameEvent as GameEvent);
+            //return null;//new EventAction(); // delegated.RecordEvent(gameEvent);
         }
 
         /// <summary>
@@ -366,7 +229,13 @@ namespace DeltaDNA
         /// <returns><see cref="EventAction"/> for this event</returns>
         /// <exception cref="System.Exception">Thrown if the SDK has not been started.</exception>
         public EventAction RecordEvent(string eventName) {
-            return delegated.RecordEvent(eventName);
+            GameEvent gameEvent = new GameEvent(eventName);
+
+            // Pass event through to UGS SDK
+            Events.CustomData(eventName, null);
+
+            return EventAction.CreateEmpty(gameEvent as GameEvent);
+            //return null; // delegated.RecordEvent(eventName);
         }
 
         /// <summary>
@@ -378,7 +247,13 @@ namespace DeltaDNA
         /// <returns><see cref="EventAction"/> for this event</returns>
         /// <exception cref="System.Exception">Thrown if the SDK has not been started.</exception>
         public EventAction RecordEvent(string eventName, Dictionary<string, object> eventParams) {
-            return delegated.RecordEvent(eventName, eventParams);
+            GameEvent gameEvent = new GameEvent(eventName);
+
+            // Pass event through to UGS SDK
+            Events.CustomData(eventName, eventParams);
+
+            return EventAction.CreateEmpty(gameEvent as GameEvent);
+            //return null; //  delegated.RecordEvent(eventName, eventParams);
         }
 
         /// <summary>
@@ -389,9 +264,9 @@ namespace DeltaDNA
         /// <param name="engagement">The engagement the request is for.</param>
         /// <param name="callback">Method called with the response from Engage.</param>
         /// <exception cref="System.Exception">Thrown if the SDK has not been started, and if the Engage URL has not been set.</exception>
-        public void RequestEngagement(Engagement engagement, Action<Dictionary<string, object>> callback) {
+        /*public void RequestEngagement(Engagement engagement, Action<Dictionary<string, object>> callback) {
             delegated.RequestEngagement(engagement, callback);
-        }
+        }*/
 
         /// <summary>
         /// Requests an Engagement with Engage.  The engagement is populated with the result of the request and
@@ -401,9 +276,9 @@ namespace DeltaDNA
         /// <param name="engagement">The engagement the request is for.</param>
         /// <param name="onCompleted">Method called with the Engagement populated by Engage.</param>
         /// <exception cref="System.Exception">Thrown if the SDK has not been started, and if the Engage URL has not been set.</exception>
-        public void RequestEngagement(Engagement engagement, Action<Engagement> onCompleted, Action<Exception> onError) {
+        /*public void RequestEngagement(Engagement engagement, Action<Engagement> onCompleted, Action<Exception> onError) {
             delegated.RequestEngagement(engagement, onCompleted, onError);
-        }
+        }*/ 
 
         /// <summary>
         /// Records that the game received a push notification.  It is safe to call this method
@@ -411,7 +286,7 @@ namespace DeltaDNA
         /// </summary>
         /// <param name="payload">The notification payload.</param>
         public void RecordPushNotification(Dictionary<string, object> payload) {
-            delegated.RecordPushNotification(payload);
+           
         }
 
         /// <summary>
@@ -422,7 +297,7 @@ namespace DeltaDNA
         /// <see cref="OnSessionConfigurationFailed"/> in case of failure.
         /// </summary>
         public void RequestSessionConfiguration() {
-            delegated.RequestSessionConfiguration();
+            
         }
 
         /// <summary>
@@ -431,7 +306,7 @@ namespace DeltaDNA
         /// will need to call this method yourself periodically.
         /// </summary>
         public void Upload() {
-            delegated.Upload();
+            // Todo pass through to re-implement UGS Flush
         }
 
         /// <summary>
@@ -446,7 +321,7 @@ namespace DeltaDNA
         /// respectively.
         /// </summary>
         public void DownloadImageAssets() {
-            delegated.DownloadImageAssets();
+            
         }
 
         /// <summary>
@@ -470,13 +345,7 @@ namespace DeltaDNA
             PlayerPrefs.DeleteKey(PF_KEY_STOP_TRACKING_ME);
             PlayerPrefs.DeleteKey(PF_KEY_ACTIONS_SALT);
 
-            delegated.ClearPersistentData();
 
-            lock (_lock) {
-                if (delegated is DDNANonTracking) {
-                    delegated = new DDNAImpl(this);
-                }
-            }
         }
 
         /// <summary>
@@ -491,12 +360,13 @@ namespace DeltaDNA
         public void ForgetMe() {
             lock (_lock) {
                 if (!PlayerPrefs.HasKey(PF_KEY_FORGET_ME)) {
-                    var started = HasStarted;
+                    // Todo remap to UGS?
+                    /*var started = HasStarted;
                     delegated.ForgetMe();
 
                     delegated = new DDNANonTracking(this);
                     if (started) delegated.StartSDK(false);
-                    delegated.ForgetMe();
+                    delegated.ForgetMe();*/
                 }
             }
         }
@@ -504,12 +374,13 @@ namespace DeltaDNA
         public void StopTrackingMe() {
             lock (_lock) {
                 if (!PlayerPrefs.HasKey(PF_KEY_STOP_TRACKING_ME)) {
-                    var started = HasStarted;
+                   /* Todo Remap to UGS? 
+                    * var started = HasStarted;
                     delegated.StopTrackingMe();
 
                     delegated = new DDNANonTracking(this);
                     if (started) delegated.StartSDK(false);
-                    delegated.StopTrackingMe();
+                    delegated.StopTrackingMe();*/
                 }
             }
         }
@@ -524,7 +395,7 @@ namespace DeltaDNA
         /// </summary>
         /// <param name="useCollect">If set to <c>true</c> use Collect server for event timestamps.</param>
         public void UseCollectTimestamp(bool useCollect) {
-            delegated.UseCollectTimestamp(useCollect);
+            //delegated.UseCollectTimestamp(useCollect);
         }
 
         /// <summary>
@@ -533,14 +404,14 @@ namespace DeltaDNA
         /// </summary>
         /// <param name="TimestampFunc">Timestamp func.</param>
         public void SetTimestampFunc(Func<DateTime?> TimestampFunc) {
-            delegated.SetTimestampFunc(TimestampFunc);
+            //delegated.SetTimestampFunc(TimestampFunc);
         }
 
         /// <summary>
         /// Sets the logging level. Choices are ERROR, WARNING, INFO or DEBUG. Default is WARNING.
         /// </summary>
         public void SetLoggingLevel(Logger.Level level) {
-            Logger.SetLogLevel(level);
+            //Logger.SetLogLevel(level);
         }
 
         /// <summary>
@@ -551,22 +422,22 @@ namespace DeltaDNA
         /// <summary>
         /// Helper for Android push notifications.
         /// </summary>
-        public AndroidNotifications AndroidNotifications { get; private set; }
+        //public AndroidNotifications AndroidNotifications { get; private set; }
 
-        #if !DDNA_IOS_PUSH_NOTIFICATIONS_REMOVED
+        //#if !DDNA_IOS_PUSH_NOTIFICATIONS_REMOVED
         /// <summary>
         /// Helper for iOS push notifications.
         /// </summary>
-        public IosNotifications IosNotifications { get; private set; }
-        #endif
+        //public IosNotifications IosNotifications { get; private set; }
+        //#endif
 
         /// <summary>
         /// The EngageFactory helps with using the Engage service.
         /// </summary>
         /// <value>The engage factory.</value>
-        public EngageFactory EngageFactory {
+        /*public EngageFactory EngageFactory {
             get { return delegated.EngageFactory; }
-        }
+        }*/
 
         #endregion
         #region Properties
@@ -581,7 +452,7 @@ namespace DeltaDNA
         /// </summary>
         public string CollectURL {
             get { return collectURL; }
-            private set { collectURL = Utils.FixURL(value); }
+            private set { collectURL = value; }
         }
 
         /// <summary>
@@ -589,7 +460,7 @@ namespace DeltaDNA
         /// </summary>
         public string EngageURL {
             get { return engageURL; }
-            private set { engageURL = Utils.FixURL(value); }
+            private set { engageURL = value; }
         }
 
         /// <summary>
@@ -619,12 +490,12 @@ namespace DeltaDNA
         /// <summary>
         /// Gets a value indicating whether this instance is initialised.
         /// </summary>
-        public bool HasStarted { get { return delegated.HasStarted; }}
+        public bool HasStarted { get { return true; }}
 
         /// <summary>
         /// Gets a value indicating whether an event upload is in progress.
         /// </summary>
-        public bool IsUploading { get { return delegated.IsUploading; }}
+        public bool IsUploading { get { return false; }}
 
         /// <summary>
         /// The Apple ID developer account ID used to publish this game.
@@ -665,73 +536,36 @@ namespace DeltaDNA
         /// The cross game user ID to be used for cross promotion. May be <code>null</code>
         /// or empty if not set.
         /// </summary>
-        public string CrossGameUserID {
-            get { return delegated.CrossGameUserID; }
-            set { delegated.CrossGameUserID = value; }
-        }
+        public string CrossGameUserID { get; set; }
 
         /// <summary>
         /// The Android registration ID that is associated with this device if it's running
         /// on the Android platform.  This must be set before calling <see cref="Start"/>.
         /// </summary>
-        public string AndroidRegistrationID {
-            get { return delegated.AndroidRegistrationID; }
-            set { delegated.AndroidRegistrationID = value; }
-        }
+        public string AndroidRegistrationID { get; set; }
+        
 
         /// <summary>
         /// The push notification token from Apple that is associated with this device if
         /// it's running on the iOS platform.  This must be set before calling <see cref="Start"/>.
         /// </summary>
-        public string PushNotificationToken {
-            get { return delegated.PushNotificationToken; }
-            set { delegated.PushNotificationToken = value; }
-        }
+        public string PushNotificationToken { get; set; }
 
         #endregion
         #region Helpers
 
         public override void OnDestroy() {
-            PlayerPrefs.Save();
-            delegated.OnDestroy();
-            if (Settings.SendGameRunningEveryMinute)
-            {
-                if (isGameRunningCoroutineRunning)
-                {
-                    StopCoroutine(gameRunningEventCoroutine);
-                    isGameRunningCoroutineRunning = false;
-                }
-            }
-            base.OnDestroy();
+
         }
 
         private void OnApplicationPause(bool pauseStatus) {
-            if (pauseStatus) {
-                PlayerPrefs.Save();
-                if (Settings.SendGameRunningEveryMinute)
-                {
-                    if (isGameRunningCoroutineRunning)
-                    {
-                        StopCoroutine(gameRunningEventCoroutine);
-                        isGameRunningCoroutineRunning = false;
-                    }
-                }
-            }
-            delegated.OnApplicationPause(pauseStatus);
-            if (!pauseStatus)
-            {
-                if (Settings.SendGameRunningEveryMinute)
-                {
-                    gameRunningEventCoroutine = GameHeartbeat(gameRunningEventInterval);
-                    StartCoroutine(gameRunningEventCoroutine);
-                }
-            }
-        }
 
+        }
+        /*
         internal virtual ImageMessageStore GetImageMessageStore() {
             return delegated.ImageMessageStore;
         }
-
+        */
         internal string ResolveEngageURL(string httpBody) {
             string url;
             if (httpBody != null && this.HashSecret != null) {
@@ -768,15 +602,7 @@ namespace DeltaDNA
         }
 
         internal static string GenerateHash(string data, string secret) {
-            var inputBytes = Encoding.UTF8.GetBytes(data + secret);
-            var hash = Utils.ComputeMD5Hash(inputBytes);
-
-            var sb = new StringBuilder();
-            for (int i = 0; i < hash.Length; i++) {
-                sb.Append(hash[i].ToString("X2"));
-            }
-
-            return sb.ToString();
+            return "DDNA-Disabled";
         }
 
         internal static string FormatURI(string uriPattern, string apiHost, string envKey, string hash) {

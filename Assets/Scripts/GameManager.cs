@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-// Todo using DeltaDNA; 
+using DeltaDNA; 
 
 public class GameManager : MonoBehaviour
 {
@@ -136,7 +136,7 @@ public class GameManager : MonoBehaviour
         else if (game.gameState == GameState.NEXTLEVEL)
         {
 
-            /* Todo
+             
             // Record MissionCompleted Event
             GameEvent missionCompleted = new GameEvent("missionCompleted")
                 .AddParam("missionID", game.currentLevel.ToString())
@@ -145,8 +145,8 @@ public class GameManager : MonoBehaviour
                 .AddParam("missionReward",game.levels[game.currentLevel].reward)
                 .AddParam("debugMode", debugMode);
 
-            DDNA.Instance.RecordEvent(missionCompleted).Run();
-            */
+            DDNA.Instance.RecordEvent(missionCompleted);//.Run();
+            
             game.currentLevel++; 
             if (game.currentLevel == game.levels.Count)
             {
@@ -160,7 +160,7 @@ public class GameManager : MonoBehaviour
         }
         else if(game.gameState == GameState.DEAD)
         {
-            /* Todo 
+             
             // Record MissionFailed event
             GameEvent missionFailed = new GameEvent("missionFailed")
                 .AddParam("missionID", game.currentLevel.ToString())
@@ -168,8 +168,8 @@ public class GameManager : MonoBehaviour
                 .AddParam("foodRemaining", foodList.Count)
                 .AddParam("debugMode", debugMode);
 
-            DDNA.Instance.RecordEvent(missionFailed).Run();
-            */         
+            DDNA.Instance.RecordEvent(missionFailed);//.Run();
+                    
             ResetGame();
 
             txtStart.gameObject.SetActive(true);
@@ -221,10 +221,10 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            /* Todo
+            
             GameEvent outOfCoins = new GameEvent("outOfCoins");
-            DDNA.Instance.RecordEvent(outOfCoins).Run();
-            */
+            DDNA.Instance.RecordEvent(outOfCoins);//.Run();
+           
         }
 
     }
@@ -246,7 +246,7 @@ public class GameManager : MonoBehaviour
 
 
             // Record MissionStarted event
-            /* Todo
+            
             GameEvent missionStarted = new GameEvent("missionStarted")
                 .AddParam("missionID", game.currentLevel.ToString())
                 .AddParam("missionName", string.Format("Mission {0}", game.currentLevel))
@@ -255,7 +255,7 @@ public class GameManager : MonoBehaviour
                 .AddParam("debugMode", debugMode);
 
             DDNA.Instance.RecordEvent(missionStarted).Run();
-            */
+            
         } // TODO add condition for not enough funds later
             
     }

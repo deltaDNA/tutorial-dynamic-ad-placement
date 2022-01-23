@@ -32,7 +32,7 @@ public class Tutorial : MonoBehaviour
         {
             var options = new InitializationOptions();
             options.SetOption("Environment", "production");
-            // Todo options.SetAnalyticsUserId(DDNA.Instance.UserID);
+            options.SetAnalyticsUserId(DDNA.Instance.UserID);
 
             await UnityServices.InitializeAsync(options);
             List<string> consentIdentifiers = await Events.CheckForRequiredConsents();
