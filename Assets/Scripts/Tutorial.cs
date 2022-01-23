@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using DeltaDNA;
+// Todo using DeltaDNA;
 using Unity.Services.Analytics;
 using Unity.Services.Core;
 using Unity.Services.Core.Analytics;
@@ -23,16 +23,16 @@ public class Tutorial : MonoBehaviour
     async void Start()
     {
 
-
+        /* Todo
         DDNA.Instance.SetLoggingLevel(DeltaDNA.Logger.Level.DEBUG);
         DDNA.Instance.StartSDK();
-
+        */
         // Start UGS SDK
         try
         {
             var options = new InitializationOptions();
             options.SetOption("Environment", "production");
-            options.SetAnalyticsUserId(DDNA.Instance.UserID);
+            // Todo options.SetAnalyticsUserId(DDNA.Instance.UserID);
 
             await UnityServices.InitializeAsync(options);
             List<string> consentIdentifiers = await Events.CheckForRequiredConsents();
