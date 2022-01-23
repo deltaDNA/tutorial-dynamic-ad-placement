@@ -30,12 +30,6 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
     private IronSourceImpressionData ironSourceImpressionData = null;
     private string ironSourceCompletionStatus = "INCOMPLETE" ;
 
-    [Header("ApplovinMax Ads")]
-    public string maxSdkKey = "Li1cCmO-P7mxhdd9Nnqr2ChbmAfGkysfV1qbGLwse-2G1OtyCwCSe3chc2RwZ1PZTeeb4KBFbrnNtrZdbmnS5p";
-    public string maxAdUnitId = "81c1d58291f2a4dc";
-    public int maxRetryAttempts = 3;
-    public bool maxRewardReached = false;
-
     // Properties
     [Header("Properties")]
     public bool isMoPubAdsEnabled = false;
@@ -61,7 +55,7 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
         if (isUnityAdsEnabled) ConfigureUnityAds();
         if (isMoPubAdsEnabled) ConfigureMoPubAds();
         if (isIronSourceAdsEnabled) ConfigureIronSourceAds();
-        if (isApplovinMaxAdsEnabled) ConfigureApplovinMaxAds();
+
 
         // Hook up callback to fire when DDNA SDK has received session config info, including Event Triggered campaigns.
         DDNA.Instance.NotifyOnSessionConfigured(true);
@@ -222,10 +216,7 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
                 {
                     IronSourceShowRewardedAd();
                 }
-                else if (isApplovinMaxAdsEnabled && (adProvider == "ANY" || adProvider == "APPLOVINMAX"))
-                {
-                    ApplovinMaxShowRewardedAd();
-                }
+
 
                 // Rewarded Ad Value controlled by Engage "adRewardValue" game parameter                               
                 if (gameParameters.ContainsKey("adRewardValue"))
@@ -508,115 +499,5 @@ public class Tutorial : MonoBehaviour, IUnityAdsListener
     }
     #endregion IronSource Callback Handlers
     #endregion IronSource
-
-    #region ApplovinMAXAds
-
-    public void ConfigureApplovinMaxAds()
-    {
-        MaxSdk.SetVerboseLogging(true);
-
-        MaxSdkCallbacks.OnSdkInitializedEvent += (MaxSdkBase.SdkConfiguration sdkConfiguration) => {
-            // AppLovin SDK is initialized, start loading ads
-            InitializeMaxRewardedAds();
-        };
-
-        MaxSdk.SetSdkKey("Li1cCmO-P7mxhdd9Nnqr2ChbmAfGkysfV1qbGLwse-2G1OtyCwCSe3chc2RwZ1PZTeeb4KBFbrnNtrZdbmnS5p");
-        //MaxSdk.SetUserId(DDNA.Instance.UserID);
-        MaxSdk.InitializeSdk();
-
-    }
-
-    public void ApplovinMaxShowRewardedAd()
-    {
-        Debug.Log("Showing ApplovinMax Rewarded Ad");
-        if (MaxSdk.IsRewardedAdReady(maxAdUnitId))
-        {
-            MaxSdk.ShowRewardedAd(maxAdUnitId, "Dynamic Placement");
-        }
-        else
-        {
-            Debug.Log("unity-script: MaxSdk.isRewardedAdReady - False");
-        }
-    }
-
-    public void InitializeMaxRewardedAds()
-    {
-        // Attach callback
-        MaxSdkCallbacks.OnRewardedAdLoadedEvent += OnRewardedAdLoadedEvent;
-        MaxSdkCallbacks.OnRewardedAdLoadFailedEvent += OnRewardedAdFailedEvent;
-        MaxSdkCallbacks.OnRewardedAdFailedToDisplayEvent += OnRewardedAdFailedToDisplayEvent;
-        MaxSdkCallbacks.OnRewardedAdDisplayedEvent += OnRewardedAdDisplayedEvent;
-        MaxSdkCallbacks.OnRewardedAdClickedEvent += OnRewardedAdClickedEvent;
-        MaxSdkCallbacks.OnRewardedAdHiddenEvent += OnRewardedAdDismissedEvent;
-        MaxSdkCallbacks.OnRewardedAdReceivedRewardEvent += OnRewardedAdReceivedRewardEvent;
-
-        // Load the first rewarded ad
-        LoadRewardedAd();
-    }
-
-    private void LoadRewardedAd()
-    {
-        MaxSdk.LoadRewardedAd(maxAdUnitId);
-    }
-
-    private void OnRewardedAdLoadedEvent(string adUnitId)
-    {
-        // Rewarded ad is ready for you to show. MaxSdk.IsRewardedAdReady(adUnitId) now returns 'true'.
-
-        // Reset retry attempt
-        maxRetryAttempts = 0;
-        maxRewardReached = false;
-    }
-
-    private void OnRewardedAdFailedEvent(string adUnitId, int errorCode)
-    {
-        // Rewarded ad failed to load 
-        // AppLovin recommends that you retry with exponentially higher delays, up to a maximum delay (in this case 64 seconds).
-
-        maxRetryAttempts++;
-        double retryDelay = Math.Pow(2, Math.Min(6, maxRetryAttempts));
-
-        Invoke("LoadRewardedAd", (float)retryDelay);
-    }
-
-    private void OnRewardedAdFailedToDisplayEvent(string adUnitId, int errorCode)
-    {
-        // Rewarded ad failed to display. AppLovin recommends that you load the next ad.
-        LoadRewardedAd();
-    }
-
-    private void OnRewardedAdDisplayedEvent(string adUnitId) { }
-
-    private void OnRewardedAdClickedEvent(string adUnitId) { }
-
-    private void OnRewardedAdDismissedEvent(string adUnitId)
-    {
-        
-        GameEvent adEvent = new GameEvent("adImpression")
-            .AddParam("adCompletionStatus", maxRewardReached ? "COMPLETED" : "INCOMPLETE")
-            .AddParam("adProvider", "ApplovinMAX Ads")
-            .AddParam("placementType", "REWARDED AD")
-            .AddParam("placementId", adUnitId)
-            .AddParam("placementType","Dynamic Placement");
-
-        double revenue = MaxSdk.GetAdInfo(adUnitId).Revenue;
-        if (revenue > 0)
-            adEvent.AddParam("adEcpmUsd", revenue * 1000); 
-
-        DDNA.Instance.RecordEvent(adEvent).Run();
-
-        // Rewarded ad is hidden. Pre-load the next ad
-        LoadRewardedAd();
-       
-    }
-
-    private void OnRewardedAdReceivedRewardEvent(string adUnitId, MaxSdk.Reward reward)
-    {
-        // The rewarded ad displayed and the user should receive the reward.
-        maxRewardReached = true;
-    }
- 
-    #endregion
-
 
 }
