@@ -135,8 +135,6 @@ public class GameManager : MonoBehaviour
         }
         else if (game.gameState == GameState.NEXTLEVEL)
         {
-
-
             // Record MissionCompleted Event
             GameEvent missionCompleted = new GameEvent("missionCompleted")
                 .AddParam("missionID", game.currentLevel.ToString())
@@ -145,8 +143,8 @@ public class GameManager : MonoBehaviour
                 .AddParam("missionReward",game.levels[game.currentLevel].reward)
                 .AddParam("debugMode", debugMode);
 
-            DDNA.Instance.RecordEvent(missionCompleted).Run();
-
+            DDNA.Instance.RecordSampledEvent(missionCompleted).Run();
+            
             game.currentLevel++; 
             if (game.currentLevel == game.levels.Count)
             {
@@ -167,7 +165,7 @@ public class GameManager : MonoBehaviour
                 .AddParam("foodRemaining", foodList.Count)
                 .AddParam("debugMode", debugMode);
 
-            DDNA.Instance.RecordEvent(missionFailed).Run();
+            DDNA.Instance.RecordSampledEvent(missionFailed).Run();
                      
             ResetGame();
 
@@ -222,7 +220,7 @@ public class GameManager : MonoBehaviour
         {
 
             GameEvent outOfCoins = new GameEvent("outOfCoins");
-            DDNA.Instance.RecordEvent(outOfCoins).Run();
+            DDNA.Instance.RecordSampledEvent(outOfCoins).Run();
         }
 
     }
@@ -251,7 +249,7 @@ public class GameManager : MonoBehaviour
                 .AddParam("missionCost", game.levels[game.currentLevel].cost)
                 .AddParam("debugMode", debugMode);
 
-            DDNA.Instance.RecordEvent(missionStarted).Run();
+            DDNA.Instance.RecordSampledEvent(missionStarted).Run();
             
 
         } // TODO add condition for not enough funds later
