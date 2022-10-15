@@ -252,6 +252,7 @@ public class GameManager : MonoBehaviour
                 .AddParam("debugMode", debugMode);
 
             DDNA.Instance.RecordEvent(missionStarted).Run();
+            
 
         } // TODO add condition for not enough funds later
             
