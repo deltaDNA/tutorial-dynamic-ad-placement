@@ -887,7 +887,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -897.5}
+  m_AnchoredPosition: {x: 0, y: -489.8}
   m_SizeDelta: {x: 750, y: 300}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &444308535
@@ -1244,7 +1244,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -814}
+  m_AnchoredPosition: {x: 0, y: -412.51}
   m_SizeDelta: {x: 750, y: 300}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &701515491
@@ -1986,9 +1986,9 @@ MonoBehaviour:
   maxRetryAttempts: 3
   maxRewardReached: 0
   isMoPubAdsEnabled: 0
-  isUnityAdsEnabled: 0
+  isUnityAdsEnabled: 1
   isIronSourceAdsEnabled: 0
-  isApplovinMaxAdsEnabled: 1
+  isApplovinMaxAdsEnabled: 0
 --- !u!4 &1276440120
 Transform:
   m_ObjectHideFlags: 0
